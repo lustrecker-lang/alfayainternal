@@ -1,0 +1,18 @@
+version: v1
+
+runConfig:
+  runtime: nodejs20
+  
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyCIoEzktIBIe5bSLAXLcb_AA-aRZ0wOABY
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: alfayainternal.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: alfayainternal
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: alfayainternal.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "1054280765700"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:1054280765700:web:f34c9afde926f2bb400051

@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Transaction Proof Documents
+    // Allow read/write to transaction_proofs folder
+    match /transaction_proofs/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    // Default: deny access to all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/*
+ * SECURITY NOTES:
+ * 
+ * Current Setup: Open access to transaction_proofs folder
+ * - Allows uploading and reading proof documents (invoices, receipts, etc.)
+ * - Suitable for internal systems or development
+ * 
+ * RECOMMENDED FOR PRODUCTION:
+ * Add Firebase Authentication and update the rule to:
+ * 
+ * match /transaction_proofs/{allPaths=**} {
+ *   allow read: if request.auth != null;
+ *   allow write: if request.auth != null && 
+ *                   request.auth.token.admin == true &&
+ *                   request.resource.size < 10 * 1024 * 1024 && // Max 10MB
+ *                   request.resource.contentType.matches('image/.*') ||
+ *                   request.resource.contentType == 'application/pdf';
+ * }
+ * 
+ * This ensures:
+ * - Only authenticated users can view documents
+ * - Only admin users can upload documents
+ * - File size limited to 10MB
+ * - Only images and PDFs allowed
+ */

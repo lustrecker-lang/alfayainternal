@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // General Ledger - Financial Transactions
+    // Allow all read/write for now (add authentication later)
+    match /general_ledger/{transaction} {
+      allow read, write: if true;
+    }
+    
+    // Default: deny access to all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/*
+ * SECURITY NOTES:
+ * 
+ * Current Setup: Open access to general_ledger collection
+ * - This allows the internal system to function without authentication
+ * - Suitable for internal/private networks or development
+ * 
+ * RECOMMENDED FOR PRODUCTION:
+ * Add Firebase Authentication and update the rule to:
+ * 
+ * match /general_ledger/{transaction} {
+ *   allow read: if request.auth != null;
+ *   allow write: if request.auth != null && 
+ *                   request.auth.token.admin == true;
+ * }
+ * 
+ * This ensures:
+ * - Only authenticated users can read transactions
+ * - Only admin users can create/edit transactions
+ */
