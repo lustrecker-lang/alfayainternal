@@ -1,4 +1,4 @@
-import Sidebar from '@/components/Sidebar';
+import GlobalHeader from '@/components/layout/GlobalHeader';
 
 export default function DashboardLayout({
     children,
@@ -6,9 +6,9 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 bg-gray-50">
+        <div className="min-h-screen bg-gray-50">
+            <GlobalHeader />
+            <main className="pt-14">
                 {children}
             </main>
         </div>
