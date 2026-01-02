@@ -11,6 +11,7 @@ export default function AfconsultLayout({
         { label: 'Overview', href: '/dashboard/afconsult' },
         { label: 'Projects', href: '/dashboard/afconsult/projects' },
         { label: 'Clients', href: '/dashboard/afconsult/clients' },
+        { label: 'Staff', href: '/dashboard/afconsult/staff' },
         { label: 'Time Logs', href: '/dashboard/afconsult/time-logs' },
         { label: 'Finance', href: '/dashboard/afconsult/finance' },
     ];

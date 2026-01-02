@@ -6,6 +6,8 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    --radius: 0.25rem;
+    /* Traditional 4px radius */
   }
 
   .dark {
@@ -24,14 +26,38 @@
         transparent 40%);
   }
 
-  /* Typography */
+  /* Typography - Unna Font (Light 300 only) */
   h1,
   h2,
   h3,
   h4,
   h5,
-  h6 {
+  h6,
+  .font-serif {
     @apply font-serif;
+    font-weight: 300 !important;
+    /* Enforce Light weight */
+    font-style: normal !important;
+    /* No italics */
+  }
+
+  /* Traditional Border Radius */
+  input,
+  select,
+  textarea,
+  button,
+  .rounded-lg {
+    border-radius: var(--radius) !important;
+  }
+
+  .rounded-xl {
+    border-radius: calc(var(--radius) * 2) !important;
+    /* 8px for cards */
+  }
+
+  .rounded-2xl {
+    border-radius: calc(var(--radius) * 3) !important;
+    /* 12px for large elements */
   }
 }
 
