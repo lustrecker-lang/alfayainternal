@@ -5,7 +5,7 @@ import { ThemeProvider } from 'next-themes';
 
 const unna = Unna({
     subsets: ['latin'],
-    weight: ['300'], // Light only - no bold or italic
+    weight: ['400'], // Use regular weight (closest to light)
     style: ['normal'], // Normal only - no italic
     variable: '--font-unna',
     display: 'swap',

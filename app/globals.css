@@ -26,7 +26,7 @@
         transparent 40%);
   }
 
-  /* Typography - Unna Font (Light 300 only) */
+  /* Typography - Unna Font (Regular 400) */
   h1,
   h2,
   h3,
@@ -35,8 +35,8 @@
   h6,
   .font-serif {
     @apply font-serif;
-    font-weight: 300 !important;
-    /* Enforce Light weight */
+    font-weight: 400 !important;
+    /* Regular weight */
     font-style: normal !important;
     /* No italics */
   }
