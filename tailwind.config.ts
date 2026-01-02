@@ -8,7 +8,6 @@ const config: Config = {
         "./app/**/*.{js,ts,jsx,tsx,mdx}",
     ],
     safelist: [
-        // Brand color variants for dynamic usage
         'bg-imeda', 'bg-afconsult', 'bg-aftech', 'bg-zinc-500',
         'text-imeda', 'text-afconsult', 'text-aftech', 'text-zinc-500',
         'border-imeda', 'border-afconsult', 'border-aftech', 'border-zinc-500',
@@ -18,9 +17,13 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                imeda: '#051E3A',      // Dark Navy
-                afconsult: '#520230',  // Deep Burgundy
-                aftech: '#737373',     // Neutral Grey
+                imeda: '#051E3A',
+                afconsult: '#520230',
+                aftech: '#737373',
+            },
+            fontFamily: {
+                sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+                serif: ['var(--font-unna)', 'Georgia', 'serif'],
             },
         },
     },

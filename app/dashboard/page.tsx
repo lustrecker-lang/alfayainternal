@@ -12,7 +12,7 @@ export default function AppLauncher() {
                 {/* Page Title */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Al Faya Ventures</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Select a business unit to continue</p>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1 font-sans">Select a business unit to continue</p>
                 </div>
 
                 {/* Glassy App Grid */}
@@ -33,49 +33,33 @@ export default function AppLauncher() {
                     backdrop-blur-xl 
                     border border-gray-200 dark:border-white/10 
                     rounded-2xl p-6 
-                    flex flex-col items-center justify-center gap-4 
+                    flex items-center justify-center
                     transition-all duration-300 
                     hover:scale-105 hover:shadow-xl 
                     hover:border-${unit.brandColor}
                     dark:hover:border-${unit.brandColor}
                   `}
                                 >
-                                    {/* Logo or Icon */}
+                                    {/* Logo or Icon only - no text */}
                                     {unit.logo ? (
-                                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 group-hover:scale-110 transition-transform">
+                                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 group-hover:scale-110 transition-transform">
                                             <Image
                                                 src={unit.logo}
                                                 alt={unit.name}
                                                 fill
-                                                className="object-contain dark:brightness-0 dark:invert"
+                                                className="object-contain dark:invert"
                                             />
                                         </div>
                                     ) : IconComponent ? (
                                         <IconComponent
                                             className={`
-                        w-12 h-12 sm:w-16 sm:h-16 
+                        w-16 h-16 sm:w-20 sm:h-20 
                         text-${unit.brandColor}
                         group-hover:scale-110 
                         transition-transform
                       `}
                                         />
                                     ) : null}
-
-                                    <div className="text-center">
-                                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                                            {unit.name}
-                                        </h3>
-                                        {unit.type === 'PORTFOLIO' && (
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                {unit.apps?.length || 0} apps
-                                            </p>
-                                        )}
-                                        {unit.type === 'FINANCE' && (
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                Financial HQ
-                                            </p>
-                                        )}
-                                    </div>
                                 </div>
                             </Link>
                         );

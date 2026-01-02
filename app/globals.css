@@ -23,6 +23,16 @@
         rgba(255, 255, 255, 0.05),
         transparent 40%);
   }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
 }
 
 /* Hide scrollbar but keep functionality */

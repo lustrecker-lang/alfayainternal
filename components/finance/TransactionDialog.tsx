@@ -10,12 +10,14 @@ interface TransactionDialogProps {
     defaultUnitId?: string;
     defaultSubProject?: string;
     triggerButton: React.ReactNode;
+    brandColor?: string;
 }
 
 export default function TransactionDialog({
     defaultUnitId,
     defaultSubProject,
     triggerButton,
+    brandColor = 'imeda',
 }: TransactionDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +40,6 @@ export default function TransactionDialog({
         setIsSubmitting(true);
 
         try {
-            // Validation
             if (!formData.unitId) {
                 throw new Error('Business unit is required');
             }
@@ -59,7 +60,6 @@ export default function TransactionDialog({
 
             await saveTransaction(data);
 
-            // Reset form and close dialog
             setFormData({
                 unitId: defaultUnitId || '',
                 subProject: defaultSubProject,
@@ -70,8 +70,6 @@ export default function TransactionDialog({
             });
             setProofFile(null);
             setIsOpen(false);
-
-            // Optional: Show success message
             alert('Transaction saved successfully!');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save transaction');
@@ -92,38 +90,36 @@ export default function TransactionDialog({
 
     return (
         <>
-            {/* Trigger Button */}
             <div onClick={() => setIsOpen(true)}>{triggerButton}</div>
 
-            {/* Dialog Overlay */}
             {isOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2">
-                                <DollarSign className="w-5 h-5 text-blue-600" />
-                                <h2 className="text-xl font-semibold text-gray-900">Add Transaction</h2>
+                                <DollarSign className={`w-5 h-5 text-${brandColor}`} />
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add Transaction</h2>
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                             >
-                                <X className="w-5 h-5 text-gray-500" />
+                                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                             </button>
                         </div>
 
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
                                     {error}
                                 </div>
                             )}
 
                             {/* Business Unit */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Business Unit
                                 </label>
                                 <input
@@ -131,28 +127,28 @@ export default function TransactionDialog({
                                     value={formData.unitId.toUpperCase()}
                                     disabled={!!defaultUnitId}
                                     onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
                                 />
                             </div>
 
-                            {/* Sub-Project (if applicable) */}
+                            {/* Sub-Project */}
                             {formData.subProject && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         App/Project
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.subProject}
                                         disabled
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed capitalize"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 cursor-not-allowed capitalize"
                                     />
                                 </div>
                             )}
 
                             {/* Type */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Type
                                 </label>
                                 <div className="flex gap-4">
@@ -162,10 +158,10 @@ export default function TransactionDialog({
                                             name="type"
                                             value="INCOME"
                                             checked={formData.type === 'INCOME'}
-                                            onChange={(e) => setFormData({ ...formData, type: 'INCOME', category: '' })}
-                                            className="w-4 h-4 text-blue-600 mr-2"
+                                            onChange={() => setFormData({ ...formData, type: 'INCOME', category: '' })}
+                                            className={`w-4 h-4 text-${brandColor} mr-2`}
                                         />
-                                        <span className="text-sm text-gray-700">Income</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Income</span>
                                     </label>
                                     <label className="flex items-center cursor-pointer">
                                         <input
@@ -173,37 +169,35 @@ export default function TransactionDialog({
                                             name="type"
                                             value="EXPENSE"
                                             checked={formData.type === 'EXPENSE'}
-                                            onChange={(e) => setFormData({ ...formData, type: 'EXPENSE', category: '' })}
-                                            className="w-4 h-4 text-blue-600 mr-2"
+                                            onChange={() => setFormData({ ...formData, type: 'EXPENSE', category: '' })}
+                                            className={`w-4 h-4 text-${brandColor} mr-2`}
                                         />
-                                        <span className="text-sm text-gray-700">Expense</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Expense</span>
                                     </label>
                                 </div>
                             </div>
 
                             {/* Category */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Category *
                                 </label>
                                 <select
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                                     required
                                 >
                                     <option value="">Select category...</option>
                                     {categories.map((cat) => (
-                                        <option key={cat} value={cat}>
-                                            {cat}
-                                        </option>
+                                        <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
                             </div>
 
                             {/* Amount */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Amount *
                                 </label>
                                 <input
@@ -212,20 +206,20 @@ export default function TransactionDialog({
                                     min="0"
                                     value={formData.amount || ''}
                                     onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                                     required
                                 />
                             </div>
 
                             {/* Currency */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Currency
                                 </label>
                                 <select
                                     value={formData.currency}
                                     onChange={(e) => setFormData({ ...formData, currency: e.target.value as any, exchangeRate: undefined })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                                 >
                                     <option value="AED">AED (UAE Dirham)</option>
                                     <option value="EUR">EUR (Euro)</option>
@@ -233,10 +227,10 @@ export default function TransactionDialog({
                                 </select>
                             </div>
 
-                            {/* Exchange Rate (if non-AED) */}
+                            {/* Exchange Rate */}
                             {formData.currency !== 'AED' && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Exchange Rate to AED *
                                     </label>
                                     <input
@@ -246,10 +240,10 @@ export default function TransactionDialog({
                                         value={formData.exchangeRate || ''}
                                         onChange={(e) => setFormData({ ...formData, exchangeRate: parseFloat(e.target.value) || 0 })}
                                         placeholder="e.g., 3.67 for USD"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                                         required
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                         1 {formData.currency} = ? AED
                                     </p>
                                 </div>
@@ -257,27 +251,27 @@ export default function TransactionDialog({
 
                             {/* Description */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Description (Optional)
                                 </label>
                                 <textarea
                                     value={formData.description || ''}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows={2}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                                     placeholder="Additional notes..."
                                 />
                             </div>
 
                             {/* Proof Upload */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Proof Document (Optional)
                                 </label>
                                 <div className="flex items-center gap-2">
-                                    <label className="flex-1 flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                        <Upload className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm text-gray-700">
+                                    <label className="flex-1 flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                        <Upload className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">
                                             {proofFile ? proofFile.name : 'Choose file...'}
                                         </span>
                                         <input
@@ -291,7 +285,7 @@ export default function TransactionDialog({
                                         <button
                                             type="button"
                                             onClick={() => setProofFile(null)}
-                                            className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                         >
                                             Remove
                                         </button>
@@ -304,14 +298,14 @@ export default function TransactionDialog({
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(false)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className={`flex-1 px-4 py-2 bg-${brandColor} text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                     {isSubmitting ? 'Saving...' : 'Save Transaction'}
                                 </button>
