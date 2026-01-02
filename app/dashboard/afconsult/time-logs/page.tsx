@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, Filter, Download } from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 const LOGS = [
     { id: 1, date: '2026-01-02', consultant: 'Consultant A', client: 'Global Industries', hours: 4.5, description: 'Q1 Strategy Session' },
@@ -11,30 +12,19 @@ const LOGS = [
 export default function TimeLogsPage() {
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Time Tracking</h1>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search logs..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:ring-2 focus:ring-afconsult outline-none transition-all"
-                        />
-                    </div>
-                    <button className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors">
-                        <Filter className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Link href="/dashboard/afconsult/time-logs/new">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm text-sm font-medium">
+                        <Clock className="w-4 h-4" />
+                        Log Hours
                     </button>
-                </div>
+                </Link>
             </div>
 
             <div className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
                 <div className="px-6 py-4 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-900/50 border-b border-gray-100 dark:border-zinc-800">
                     <h2 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-tight font-sans">Recent Activity</h2>
-                    <button className="text-xs font-bold text-afconsult hover:underline flex items-center gap-1">
-                        <Download className="w-3 h-3" />
-                        Export Monthly Ledger
-                    </button>
                 </div>
                 <table className="w-full text-left border-collapse">
                     <thead>

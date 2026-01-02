@@ -1,37 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { DollarSign, ArrowUpRight, ArrowDownLeft, FileText, Download } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function FinancePage() {
     const [view, setView] = useState<'INVOICES' | 'EXPENSES'>('INVOICES');
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Unit Finance</h1>
+                <Link href="/dashboard/afconsult/finance/new">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm text-sm font-medium">
+                        <Plus className="w-4 h-4" />
+                        Add Transaction
+                    </button>
+                </Link>
+            </div>
 
-                {/* Toggle Switch */}
-                <div className="flex p-1 bg-gray-100 dark:bg-zinc-800 rounded-xl w-full sm:w-auto">
-                    <button
-                        onClick={() => setView('INVOICES')}
-                        className={`flex-1 sm:w-40 py-2 text-sm font-bold rounded-lg transition-all ${view === 'INVOICES'
-                                ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                    >
-                        Invoices Issued
-                    </button>
-                    <button
-                        onClick={() => setView('EXPENSES')}
-                        className={`flex-1 sm:w-40 py-2 text-sm font-bold rounded-lg transition-all ${view === 'EXPENSES'
-                                ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                    >
-                        Expenses Incurred
-                    </button>
-                </div>
+            {/* Toggle Switch */}
+            <div className="flex p-1 bg-gray-100 dark:bg-zinc-800 rounded-xl w-full sm:w-auto max-w-md">
+                <button
+                    onClick={() => setView('INVOICES')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${view === 'INVOICES'
+                            ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Invoices Issued
+                </button>
+                <button
+                    onClick={() => setView('EXPENSES')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${view === 'EXPENSES'
+                            ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Expenses Incurred
+                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
