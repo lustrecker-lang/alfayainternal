@@ -32,13 +32,10 @@
   h3,
   h4,
   h5,
-  h6,
-  .font-serif {
-    @apply font-serif;
+  h6 {
+    font-family: var(--font-unna), Georgia, serif;
     font-weight: 400 !important;
-    /* Regular weight */
     font-style: normal !important;
-    /* No italics */
   }
 
   /* Traditional Border Radius */
