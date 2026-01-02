@@ -1,22 +1,49 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FinancePage() {
     const [view, setView] = useState<'INVOICES' | 'EXPENSES'>('INVOICES');
+    const [showDropdown, setShowDropdown] = useState(false);
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Unit Finance</h1>
-                <Link href="/dashboard/afconsult/finance/new">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm text-sm font-medium">
+
+                {/* Dropdown Button */}
+                <div className="relative">
+                    <button
+                        onClick={() => setShowDropdown(!showDropdown)}
+                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm text-sm font-medium"
+                    >
                         <Plus className="w-4 h-4" />
                         Add Transaction
+                        <ChevronDown className="w-4 h-4" />
                     </button>
-                </Link>
+
+                    {showDropdown && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                                <Link href="/dashboard/afconsult/finance/new?type=invoice" onClick={() => setShowDropdown(false)}>
+                                    <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-2">
+                                        <ArrowUpRight className="w-4 h-4 text-green-600" />
+                                        Log Invoice
+                                    </div>
+                                </Link>
+                                <Link href="/dashboard/afconsult/finance/new?type=expense" onClick={() => setShowDropdown(false)}>
+                                    <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-2">
+                                        <ArrowDownLeft className="w-4 h-4 text-red-600" />
+                                        Log Expense
+                                    </div>
+                                </Link>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Toggle Switch */}
