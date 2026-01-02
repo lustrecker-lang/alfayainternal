@@ -33,21 +33,31 @@ export async function saveTransaction(data: TransactionFormData): Promise<string
             ? data.amount
             : data.amount * (data.exchangeRate || 1);
 
-        // Create transaction document
-        const transaction = {
+        // Create transaction document (only include defined fields)
+        const transaction: any = {
             unitId: data.unitId,
-            subProject: data.subProject,
             amount: data.amount,
             currency: data.currency,
-            exchangeRate: data.exchangeRate,
             amountInAED,
             type: data.type,
             category: data.category,
-            description: data.description,
-            proofUrl,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
+
+        // Only add optional fields if they have values
+        if (data.subProject) {
+            transaction.subProject = data.subProject;
+        }
+        if (data.exchangeRate) {
+            transaction.exchangeRate = data.exchangeRate;
+        }
+        if (data.description) {
+            transaction.description = data.description;
+        }
+        if (proofUrl) {
+            transaction.proofUrl = proofUrl;
+        }
 
         const docRef = await addDoc(collection(db, 'general_ledger'), transaction);
         return docRef.id;
