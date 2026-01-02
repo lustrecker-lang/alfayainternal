@@ -11,7 +11,7 @@ interface Tab {
 
 interface ModuleLayoutProps {
     tabs: Tab[];
-    brandColor: string; // Dynamic brand color for theming
+    brandColor: string;
     actions?: ReactNode;
     children: ReactNode;
 }
@@ -23,7 +23,7 @@ export default function ModuleLayout({ tabs, brandColor, actions, children }: Mo
         <div>
             {/* Tab Navigation Bar */}
             <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-14 z-40 transition-colors">
-                <div className="max-w-7xl mx-auto px-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between">
                         {/* Tabs */}
                         <div className="flex gap-6 overflow-x-auto scrollbar-hide">
@@ -58,8 +58,10 @@ export default function ModuleLayout({ tabs, brandColor, actions, children }: Mo
                 </div>
             </div>
 
-            {/* Page Content */}
-            <div>{children}</div>
+            {/* Page Content - Wrapped with consistent max-width */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {children}
+            </div>
         </div>
     );
 }

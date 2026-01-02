@@ -6,8 +6,8 @@ import * as LucideIcons from 'lucide-react';
 
 export default function AppLauncher() {
     return (
-        <div className="min-h-screen p-6 sm:p-8 lg:p-12">
-            <div className="max-w-7xl mx-auto">
+        <div className="py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Page Title */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Al Faya Ventures</h1>
@@ -17,7 +17,6 @@ export default function AppLauncher() {
                 {/* Glassy App Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                     {BUSINESS_UNITS.map((unit) => {
-                        // Dynamically get the icon component
                         const IconComponent = (LucideIcons as any)[unit.icon];
 
                         return (
@@ -31,7 +30,7 @@ export default function AppLauncher() {
                     aspect-square 
                     bg-white/60 dark:bg-white/5 
                     backdrop-blur-xl 
-                    border border-white/40 dark:border-white/10 
+                    border border-gray-200 dark:border-white/10 
                     rounded-2xl p-6 
                     flex flex-col items-center justify-center gap-4 
                     transition-all duration-300 
@@ -40,7 +39,6 @@ export default function AppLauncher() {
                     dark:hover:border-${unit.brandColor}
                   `}
                                 >
-                                    {/* Icon with brand color */}
                                     {IconComponent && (
                                         <IconComponent
                                             className={`
@@ -52,7 +50,6 @@ export default function AppLauncher() {
                                         />
                                     )}
 
-                                    {/* Unit Name */}
                                     <div className="text-center">
                                         <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                                             {unit.name}
