@@ -36,30 +36,30 @@ export default function ModuleLayout({ tabs, brandColor, actions, children }: Mo
                                         href={tab.href}
                                         className={`
                       py-4 px-1 border-b-2 text-sm font-medium transition-all whitespace-nowrap
-                      ${is Active 
-                        ? `border-${brandColor} text-gray-900 dark:text-white font-bold`
-                                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }
+                      ${isActive
+                                                ? `border-${brandColor} text-gray-900 dark:text-white font-bold`
+                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                                            }
                     `}
-                  >
-                    {tab.label}
-                  </Link>
-                );
-              })}
+                                    >
+                                        {tab.label}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+
+                        {/* Actions (right side) */}
+                        {actions && (
+                            <div className="flex items-center gap-2 ml-4">
+                                {actions}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {/* Actions (right side) */}
-            {actions && (
-              <div className="flex items-center gap-2 ml-4">
-                {actions}
-              </div>
-            )}
-          </div>
+            {/* Page Content */}
+            <div>{children}</div>
         </div>
-      </div>
-
-      {/* Page Content */}
-      <div>{children}</div>
-    </div>
-  );
+    );
 }
