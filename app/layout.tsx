@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from 'next-themes';
 
 export const metadata: Metadata = {
-    title: "AFV Internal System",
-    description: "Al Faya Ventures Internal Management System",
+    title: "Al Faya Ventures Internal",
+    description: "Internal management system for Al Faya Ventures",
 };
 
 export default function RootLayout({
@@ -14,7 +15,9 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className="antialiased">
-                {children}
+                <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+                    {children}
+                </ThemeProvider>
             </body>
         </html>
     );

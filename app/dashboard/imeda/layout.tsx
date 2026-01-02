@@ -12,7 +12,7 @@ export default function ImedaLayout({
     ];
 
     return (
-        <ModuleLayout tabs={tabs}>
+        <ModuleLayout tabs={tabs} brandColor="imeda">
             {children}
         </ModuleLayout>
     );

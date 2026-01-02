@@ -11,7 +11,7 @@ export default function AftechLayout({
     ];
 
     return (
-        <ModuleLayout tabs={tabs}>
+        <ModuleLayout tabs={tabs} brandColor="aftech">
             {children}
         </ModuleLayout>
     );

@@ -11,17 +11,18 @@ interface Tab {
 
 interface ModuleLayoutProps {
     tabs: Tab[];
+    brandColor: string; // Dynamic brand color for theming
     actions?: ReactNode;
     children: ReactNode;
 }
 
-export default function ModuleLayout({ tabs, actions, children }: ModuleLayoutProps) {
+export default function ModuleLayout({ tabs, brandColor, actions, children }: ModuleLayoutProps) {
     const pathname = usePathname();
 
     return (
         <div>
             {/* Tab Navigation Bar */}
-            <div className="bg-white border-b border-gray-200 sticky top-14 z-40">
+            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-14 z-40 transition-colors">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between">
                         {/* Tabs */}
@@ -34,31 +35,31 @@ export default function ModuleLayout({ tabs, actions, children }: ModuleLayoutPr
                                         key={tab.href}
                                         href={tab.href}
                                         className={`
-                      py-4 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap
-                      ${isActive
-                                                ? 'border-black text-gray-900'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                            }
+                      py-4 px-1 border-b-2 text-sm font-medium transition-all whitespace-nowrap
+                      ${is Active 
+                        ? `border-${brandColor} text-gray-900 dark:text-white font-bold`
+                                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                      }
                     `}
-                                    >
-                                        {tab.label}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-
-                        {/* Actions (right side) */}
-                        {actions && (
-                            <div className="flex items-center gap-2 ml-4">
-                                {actions}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                  >
+                    {tab.label}
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* Page Content */}
-            <div>{children}</div>
+            {/* Actions (right side) */}
+            {actions && (
+              <div className="flex items-center gap-2 ml-4">
+                {actions}
+              </div>
+            )}
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Page Content */}
+      <div>{children}</div>
+    </div>
+  );
 }

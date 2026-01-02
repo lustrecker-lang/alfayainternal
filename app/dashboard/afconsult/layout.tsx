@@ -12,7 +12,7 @@ export default function AfconsultLayout({
     ];
 
     return (
-        <ModuleLayout tabs={tabs}>
+        <ModuleLayout tabs={tabs} brandColor="afconsult">
             {children}
         </ModuleLayout>
     );
