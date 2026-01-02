@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Building2, User, LogOut, Settings, Sun, Moon } from 'lucide-react';
+import Image from 'next/image';
+import { User, LogOut, Settings, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 
@@ -10,20 +11,24 @@ export default function GlobalHeader() {
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
-    // Avoid hydration mismatch
     useEffect(() => setMounted(true), []);
 
     return (
         <header className="fixed top-0 left-0 right-0 h-14 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-50 transition-colors">
-            <div className="h-full max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
                 {/* Logo / Home Button */}
                 <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                    <Building2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold text-lg hidden sm:inline">Al Faya Ventures</span>
-                    <span className="font-semibold text-lg sm:hidden">AFV</span>
+                    <Image
+                        src="/logos/alfaya.svg"
+                        alt="Al Faya Ventures"
+                        width={140}
+                        height={32}
+                        className="h-8 w-auto dark:brightness-0 dark:invert"
+                        priority
+                    />
                 </Link>
 
                 {/* Right Side Actions */}
@@ -55,23 +60,16 @@ export default function GlobalHeader() {
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden md:inline">Admin</span>
                         </button>
 
-                        {/* Dropdown Menu */}
                         {showUserMenu && (
                             <>
-                                {/* Backdrop to close menu */}
                                 <div
                                     className="fixed inset-0 z-40"
                                     onClick={() => setShowUserMenu(false)}
                                 />
-
-                                {/* Menu */}
                                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                                     <button
                                         className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
-                                        onClick={() => {
-                                            setShowUserMenu(false);
-                                            // TODO: Navigate to settings
-                                        }}
+                                        onClick={() => setShowUserMenu(false)}
                                     >
                                         <Settings className="w-4 h-4" />
                                         Settings
@@ -81,7 +79,6 @@ export default function GlobalHeader() {
                                         className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
                                         onClick={() => {
                                             setShowUserMenu(false);
-                                            // TODO: Implement logout
                                             alert('Logout functionality to be implemented');
                                         }}
                                     >

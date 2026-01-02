@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { BUSINESS_UNITS } from '@/config/units';
 import * as LucideIcons from 'lucide-react';
 
@@ -17,7 +18,7 @@ export default function AppLauncher() {
                 {/* Glassy App Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                     {BUSINESS_UNITS.map((unit) => {
-                        const IconComponent = (LucideIcons as any)[unit.icon];
+                        const IconComponent = unit.icon ? (LucideIcons as any)[unit.icon] : null;
 
                         return (
                             <Link
@@ -39,7 +40,17 @@ export default function AppLauncher() {
                     dark:hover:border-${unit.brandColor}
                   `}
                                 >
-                                    {IconComponent && (
+                                    {/* Logo or Icon */}
+                                    {unit.logo ? (
+                                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 group-hover:scale-110 transition-transform">
+                                            <Image
+                                                src={unit.logo}
+                                                alt={unit.name}
+                                                fill
+                                                className="object-contain dark:brightness-0 dark:invert"
+                                            />
+                                        </div>
+                                    ) : IconComponent ? (
                                         <IconComponent
                                             className={`
                         w-12 h-12 sm:w-16 sm:h-16 
@@ -48,7 +59,7 @@ export default function AppLauncher() {
                         transition-transform
                       `}
                                         />
-                                    )}
+                                    ) : null}
 
                                     <div className="text-center">
                                         <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">

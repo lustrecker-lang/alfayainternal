@@ -3,13 +3,20 @@ export type UnitType = 'OPERATION' | 'PORTFOLIO' | 'FINANCE';
 
 // Unit Interface
 export interface Unit {
-    slug: string; // e.g., 'imeda', 'aftech'
+    slug: string;
     name: string;
     type: UnitType;
-    icon: string; // Lucide icon name
-    brandColor: string; // Tailwind color key for dynamic theming
-    // specific config for Portfolio types
-    apps?: { slug: string; name: string }[];
+    icon?: string; // Lucide icon name (fallback)
+    logo?: string; // Path to logo file
+    brandColor: string;
+    apps?: App[];
+}
+
+export interface App {
+    slug: string;
+    name: string;
+    icon?: string;
+    logo?: string;
 }
 
 // Business Units Registry
@@ -18,25 +25,25 @@ export const BUSINESS_UNITS: Unit[] = [
         slug: 'imeda',
         name: 'IMEDA',
         type: 'OPERATION',
-        icon: 'GraduationCap',
-        brandColor: 'imeda', // Dark Navy (#051E3A)
+        logo: '/logos/imeda.svg',
+        brandColor: 'imeda',
     },
     {
         slug: 'afconsult',
         name: 'AF Consult',
         type: 'OPERATION',
-        icon: 'Briefcase',
-        brandColor: 'afconsult', // Deep Burgundy (#520230)
+        logo: '/logos/afconsult.svg',
+        brandColor: 'afconsult',
     },
     {
         slug: 'aftech',
         name: 'AFTECH',
         type: 'PORTFOLIO',
         icon: 'Laptop',
-        brandColor: 'aftech', // Neutral Grey (#737373)
+        brandColor: 'aftech',
         apps: [
-            { slug: 'circles', name: 'Circles' },
-            { slug: 'whosfree', name: 'WhosFree' },
+            { slug: 'circles', name: 'Circles', logo: '/logos/circles.png' },
+            { slug: 'whosfree', name: 'WhosFree', logo: '/logos/whosfree.png' },
         ],
     },
     {
@@ -44,7 +51,7 @@ export const BUSINESS_UNITS: Unit[] = [
         name: 'Finance HQ',
         type: 'FINANCE',
         icon: 'DollarSign',
-        brandColor: 'zinc-500', // Neutral zinc for financial operations
+        brandColor: 'zinc-500',
     },
 ];
 
@@ -54,7 +61,7 @@ export function getUnitBySlug(slug: string): Unit | undefined {
 }
 
 // Helper function to find app within a portfolio unit
-export function getAppBySlug(unitSlug: string, appSlug: string): { slug: string; name: string } | undefined {
+export function getAppBySlug(unitSlug: string, appSlug: string): App | undefined {
     const unit = getUnitBySlug(unitSlug);
     if (unit?.type === 'PORTFOLIO' && unit.apps) {
         return unit.apps.find(app => app.slug === appSlug);
