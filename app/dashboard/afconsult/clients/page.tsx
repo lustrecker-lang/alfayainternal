@@ -37,6 +37,7 @@ export default function ClientsPage() {
                             <tr
                                 key={client.id}
                                 className="hover:bg-gray-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+                                onClick={() => window.location.href = `/dashboard/afconsult/clients/${client.id}`}
                             >
                                 <td className="px-6 py-4">
                                     <Link href={`/dashboard/afconsult/clients/${client.id}`} className="text-sm font-normal text-gray-900 dark:text-white hover:text-afconsult font-sans">
