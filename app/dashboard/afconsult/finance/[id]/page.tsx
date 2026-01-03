@@ -2,9 +2,10 @@
 
 import { ArrowLeft, Save, FileDown, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, use } from 'react';
 
-export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         invoiceNumber: 'INV-2026-001',
@@ -206,7 +207,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                         <div className="space-y-2 text-sm font-sans">
                             <div className="flex justify-between">
                                 <span className="text-gray-500">Invoice ID:</span>
-                                <span className="text-gray-900 dark:text-white">#{params.id}</span>
+                                <span className="text-gray-900 dark:text-white">#{id}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-500">Created:</span>
