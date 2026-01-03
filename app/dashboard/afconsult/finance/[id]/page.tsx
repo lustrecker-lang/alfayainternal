@@ -201,19 +201,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                     {/* Line Items */}
                     <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Line Items</h3>
-                            {isEditing && (
-                                <button
-                                    onClick={addLineItem}
-                                    className="flex items-center gap-1 px-3 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity text-xs font-normal font-sans"
-                                    style={{ borderRadius: '0.25rem' }}
-                                >
-                                    <Plus className="w-3 h-3" />
-                                    Add Item
-                                </button>
-                            )}
-                        </div>
+                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Line Items</h3>
 
                         <div className="space-y-3">
                             {lineItems.map((item, index) => (
@@ -288,6 +276,18 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     </div>
                                 </div>
                             ))}
+
+                            {/* Add Line Item Button */}
+                            {isEditing && (
+                                <button
+                                    onClick={addLineItem}
+                                    className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-afconsult hover:text-afconsult transition-colors flex items-center justify-center gap-2 font-sans text-sm"
+                                    style={{ borderRadius: '0.25rem' }}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Add Line Item
+                                </button>
+                            )}
 
                             <div className="pt-4 border-t border-gray-300 dark:border-gray-600 flex justify-between items-center">
                                 <span className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">Total Amount:</span>
