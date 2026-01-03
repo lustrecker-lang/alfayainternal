@@ -1,35 +1,108 @@
-// Transaction type for general ledger
+// ============================================================
+// POLYMORPHIC TRANSACTION TYPES
+// ============================================================
+
+// === METADATA INTERFACES (Unit-Specific Context) ===
+
+// AFCONSULT Income: Client payment linked to project/invoice
+export interface AFConsultIncomeMetadata {
+    client_id: string;
+    project_id?: string;
+    invoice_reference?: string;
+}
+
+// AFCONSULT Expense (Direct): Cost linked to a client/project
+export interface AFConsultExpenseDirectMetadata {
+    client_id: string;
+    project_id?: string;
+    is_billable: boolean;
+}
+
+// AFCONSULT Expense (Operational): General overhead with no client link
+export interface AFConsultExpenseOperationalMetadata {
+    is_operational: true;
+}
+
+// IMEDA: Seminar/education context (placeholder for future)
+export interface IMEDAMetadata {
+    seminar_id?: string;
+    student_pax?: number;
+}
+
+// AFTECH: App/product context
+export interface AFTechMetadata {
+    app_slug: string; // "circles" | "whosfree"
+    server_region?: string;
+}
+
+// Union type for all metadata variants
+export type TransactionMetadata =
+    | AFConsultIncomeMetadata
+    | AFConsultExpenseDirectMetadata
+    | AFConsultExpenseOperationalMetadata
+    | IMEDAMetadata
+    | AFTechMetadata;
+
+// === CORE TRANSACTION INTERFACE ===
+
 export interface Transaction {
     id: string;
-    unitId: string;
-    subProject?: string; // For portfolio units like 'circles' or 'whosfree'
-    amount: number;
-    currency: 'AED' | 'EUR' | 'USD';
-    exchangeRate?: number; // Required if currency is not AED
-    amountInAED: number; // Converted amount for reporting
+
+    // === UNIVERSAL FIELDS (The "Envelope") ===
+    date: Date;                    // Transaction date
+    vendor?: string;               // Who you paid/received from
+    amount: number;                // Original amount (excl. VAT)
+    currency: 'AED' | 'EUR' | 'USD' | 'GBP';
+    exchangeRate?: number;         // Required if currency is not AED
+    amountInAED: number;           // Normalized for reporting
+    vatRate: number;               // 0 or 5
+    vatAmount: number;             // Calculated VAT amount
+    totalAmount: number;           // Amount + VAT
     type: 'INCOME' | 'EXPENSE';
     category: string;
     description?: string;
-    proofUrl?: string; // Firebase Storage URL
+    proofUrl?: string;             // Firebase Storage URL
+    unitId: string;                // "imeda", "afconsult", "aftech"
+
+    // Timestamps
     createdAt: Date;
     updatedAt: Date;
-    createdBy?: string; // User ID who created the transaction
+    createdBy?: string;            // User ID who created the transaction
+
+    // === POLYMORPHIC FIELD (The "Letter") ===
+    metadata?: TransactionMetadata; // Optional for backwards compatibility
 }
 
-// Form data for creating a new transaction
+// === FORM DATA INTERFACE ===
+
 export interface TransactionFormData {
-    unitId: string;
-    subProject?: string;
+    date: string;                  // ISO date string
+    vendor: string;
     amount: number;
-    currency: 'AED' | 'EUR' | 'USD';
+    currency: 'AED' | 'EUR' | 'USD' | 'GBP';
     exchangeRate?: number;
+    vatRate: number;
     type: 'INCOME' | 'EXPENSE';
     category: string;
     description?: string;
     proofFile?: File;
+    unitId: string;
+
+    // Polymorphic metadata fields (flattened for form state)
+    // These get assembled into the metadata object on save
+    clientId?: string;
+    projectId?: string;
+    invoiceReference?: string;
+    isBillable?: boolean;
+    isOperational?: boolean;
+    seminarId?: string;
+    studentPax?: number;
+    appSlug?: string;
+    serverRegion?: string;
 }
 
-// Transaction categories
+// === CATEGORIES ===
+
 export const TRANSACTION_CATEGORIES = {
     INCOME: [
         'Revenue - Service',
@@ -40,24 +113,33 @@ export const TRANSACTION_CATEGORIES = {
         'Revenue - Other',
     ],
     EXPENSE: [
-        'Expense - Salaries',
-        'Expense - Marketing',
-        'Expense - Operations',
-        'Expense - Infrastructure',
-        'Expense - Travel',
-        'Expense - Office',
-        'Expense - Other',
+        'Travel & Transport',
+        'Accommodation',
+        'Meals & Entertainment',
+        'Office Supplies',
+        'Software & Subscriptions',
+        'Professional Services',
+        'Marketing & Advertising',
+        'Utilities',
+        'Salaries & Wages',
+        'Infrastructure',
+        'Other',
     ],
 };
 
-// Currency symbols
+// === CURRENCY HELPERS ===
+
 export const CURRENCY_SYMBOLS = {
     AED: 'AED',
     EUR: '€',
     USD: '$',
+    GBP: '£',
 } as const;
 
-// Summary data for HQ dashboard
+export const SUPPORTED_CURRENCIES = ['AED', 'EUR', 'USD', 'GBP'] as const;
+
+// === SUMMARY TYPES ===
+
 export interface FinancialSummary {
     totalIncome: number;
     totalExpenses: number;
@@ -69,4 +151,79 @@ export interface FinancialSummary {
             expenses: number;
         };
     };
+}
+
+// === TYPE GUARDS ===
+
+export function isAFConsultIncome(metadata: TransactionMetadata | undefined): metadata is AFConsultIncomeMetadata {
+    return !!metadata && 'client_id' in metadata && !('is_billable' in metadata) && !('is_operational' in metadata);
+}
+
+export function isAFConsultExpenseDirect(metadata: TransactionMetadata | undefined): metadata is AFConsultExpenseDirectMetadata {
+    return !!metadata && 'is_billable' in metadata;
+}
+
+export function isAFConsultExpenseOperational(metadata: TransactionMetadata | undefined): metadata is AFConsultExpenseOperationalMetadata {
+    return !!metadata && 'is_operational' in metadata && metadata.is_operational === true;
+}
+
+export function isIMEDAMetadata(metadata: TransactionMetadata | undefined): metadata is IMEDAMetadata {
+    return !!metadata && 'seminar_id' in metadata;
+}
+
+export function isAFTechMetadata(metadata: TransactionMetadata | undefined): metadata is AFTechMetadata {
+    return !!metadata && 'app_slug' in metadata;
+}
+
+// === METADATA BUILDER HELPERS ===
+
+export function buildMetadata(formData: TransactionFormData): TransactionMetadata | undefined {
+    const { unitId, type, clientId, projectId, invoiceReference, isBillable, isOperational, seminarId, studentPax, appSlug, serverRegion } = formData;
+
+    // AFCONSULT
+    if (unitId === 'afconsult') {
+        if (type === 'INCOME') {
+            if (!clientId) return undefined;
+            return {
+                client_id: clientId,
+                project_id: projectId || undefined,
+                invoice_reference: invoiceReference || undefined,
+            } as AFConsultIncomeMetadata;
+        } else {
+            // EXPENSE
+            if (isOperational) {
+                return { is_operational: true } as AFConsultExpenseOperationalMetadata;
+            }
+            if (!clientId) return undefined;
+            return {
+                client_id: clientId,
+                project_id: projectId || undefined,
+                is_billable: isBillable || false,
+            } as AFConsultExpenseDirectMetadata;
+        }
+    }
+
+    // IMEDA
+    if (unitId === 'imeda') {
+        if (seminarId || studentPax) {
+            return {
+                seminar_id: seminarId || undefined,
+                student_pax: studentPax || undefined,
+            } as IMEDAMetadata;
+        }
+        return undefined;
+    }
+
+    // AFTECH
+    if (unitId === 'aftech') {
+        if (appSlug) {
+            return {
+                app_slug: appSlug,
+                server_region: serverRegion || undefined,
+            } as AFTechMetadata;
+        }
+        return undefined;
+    }
+
+    return undefined;
 }

@@ -31,7 +31,7 @@ export default function Sidebar() {
 
             <nav className="space-y-2">
                 {BUSINESS_UNITS.map((unit) => {
-                    const IconComponent = (Icons as any)[unit.icon] || Icons.Circle;
+                    const IconComponent = unit.icon ? (Icons as any)[unit.icon] || Icons.Circle : Icons.Circle;
                     const isExpanded = expandedUnits.includes(unit.slug);
                     const unitActive = isUnitActive(unit.slug);
 
@@ -41,10 +41,10 @@ export default function Sidebar() {
                                 <Link
                                     href={`/dashboard/${unit.slug}`}
                                     className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors flex-1 ${isActive(`/dashboard/${unit.slug}`)
-                                            ? 'bg-blue-600 text-white'
-                                            : unitActive
-                                                ? 'bg-gray-800 text-blue-300'
-                                                : 'hover:bg-gray-800 text-gray-300'
+                                        ? 'bg-blue-600 text-white'
+                                        : unitActive
+                                            ? 'bg-gray-800 text-blue-300'
+                                            : 'hover:bg-gray-800 text-gray-300'
                                         }`}
                                 >
                                     <IconComponent className="w-5 h-5" />
@@ -73,8 +73,8 @@ export default function Sidebar() {
                                             key={app.slug}
                                             href={`/dashboard/${unit.slug}/${app.slug}`}
                                             className={`block px-3 py-2 rounded-lg text-sm transition-colors ${isActive(`/dashboard/${unit.slug}/${app.slug}`)
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'hover:bg-gray-800 text-gray-400'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'hover:bg-gray-800 text-gray-400'
                                                 }`}
                                         >
                                             {app.name}

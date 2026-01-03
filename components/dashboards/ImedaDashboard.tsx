@@ -7,7 +7,7 @@ export default function ImedaDashboard() {
             {/* Transaction Action */}
             <div className="mb-6 flex justify-end">
                 <TransactionDialog
-                    defaultUnitId="imeda"
+                    defaultUnit="imeda"
                     brandColor="imeda"
                     triggerButton={
                         <button className="flex items-center gap-2 px-4 py-2 bg-imeda text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm">

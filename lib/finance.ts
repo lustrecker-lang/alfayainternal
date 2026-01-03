@@ -9,12 +9,15 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
-import type { Transaction, TransactionFormData, FinancialSummary } from '@/types/finance';
+import type { Transaction, TransactionFormData, FinancialSummary, TransactionMetadata } from '@/types/finance';
 
 /**
- * Save a new transaction to Firestore
+ * Save a new transaction to Firestore with polymorphic metadata
  */
-export async function saveTransaction(data: TransactionFormData): Promise<string> {
+export async function saveTransaction(
+    data: TransactionFormData,
+    metadata?: TransactionMetadata
+): Promise<string> {
     try {
         let proofUrl: string | undefined;
 
@@ -28,28 +31,36 @@ export async function saveTransaction(data: TransactionFormData): Promise<string
             proofUrl = await getDownloadURL(storageRef);
         }
 
-        // Calculate amount in AED
-        const amountInAED = data.currency === 'AED'
-            ? data.amount
-            : data.amount * (data.exchangeRate || 1);
+        // Calculate VAT and totals
+        const vatAmount = data.amount * (data.vatRate / 100);
+        const totalAmount = data.amount + vatAmount;
 
-        // Create transaction document (only include defined fields)
-        const transaction: any = {
-            unitId: data.unitId,
+        // Calculate amount in AED (normalized)
+        const exchangeRate = data.exchangeRate || 1;
+        const amountInAED = data.currency === 'AED'
+            ? totalAmount
+            : totalAmount * exchangeRate;
+
+        // Create transaction document
+        const transaction: Record<string, any> = {
+            // Core fields (The "Envelope")
+            date: Timestamp.fromDate(new Date(data.date)),
+            vendor: data.vendor,
             amount: data.amount,
             currency: data.currency,
-            amountInAED,
+            vatRate: data.vatRate,
+            vatAmount: vatAmount,
+            totalAmount: totalAmount,
+            amountInAED: amountInAED,
             type: data.type,
             category: data.category,
+            unitId: data.unitId,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
 
-        // Only add optional fields if they have values
-        if (data.subProject) {
-            transaction.subProject = data.subProject;
-        }
-        if (data.exchangeRate) {
+        // Add optional core fields
+        if (data.exchangeRate && data.currency !== 'AED') {
             transaction.exchangeRate = data.exchangeRate;
         }
         if (data.description) {
@@ -57,6 +68,11 @@ export async function saveTransaction(data: TransactionFormData): Promise<string
         }
         if (proofUrl) {
             transaction.proofUrl = proofUrl;
+        }
+
+        // Add polymorphic metadata (The "Letter")
+        if (metadata && Object.keys(metadata).length > 0) {
+            transaction.metadata = metadata;
         }
 
         const docRef = await addDoc(collection(db, 'general_ledger'), transaction);
@@ -90,12 +106,23 @@ export async function getTransactions(
 
         const snapshot = await getDocs(q);
 
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt.toDate(),
-            updatedAt: doc.data().updatedAt.toDate(),
-        })) as Transaction[];
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                // Handle date fields safely
+                date: data.date?.toDate?.() || data.createdAt?.toDate?.() || new Date(),
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                updatedAt: data.updatedAt?.toDate?.() || new Date(),
+                // Handle optional fields with safe defaults
+                vatRate: data.vatRate || 0,
+                vatAmount: data.vatAmount || 0,
+                totalAmount: data.totalAmount || data.amountInAED || data.amount || 0,
+                vendor: data.vendor || '',
+                metadata: data.metadata, // May be undefined for old records
+            };
+        }) as Transaction[];
     } catch (error) {
         console.error('Error fetching transactions:', error);
         return [];
@@ -115,7 +142,7 @@ export function calculateSummary(transactions: Transaction[]): FinancialSummary 
     };
 
     transactions.forEach(transaction => {
-        const amount = transaction.amountInAED;
+        const amount = transaction.amountInAED || 0;
 
         if (transaction.type === 'INCOME') {
             summary.totalIncome += amount;
@@ -154,6 +181,7 @@ export function formatCurrency(amount: number, currency: string = 'AED'): string
 
 /**
  * Export transactions to CSV and trigger download
+ * Core fields are columns, metadata is serialized as JSON
  */
 export async function exportLedgerToCSV(
     startDate?: Date,
@@ -163,40 +191,48 @@ export async function exportLedgerToCSV(
     try {
         const transactions = await getTransactions(startDate, endDate, unitId);
 
-        // CSV headers
+        // CSV headers (core fields only - accountant friendly)
         const headers = [
             'Date',
             'Unit',
-            'Sub-Project',
             'Type',
             'Category',
+            'Vendor',
             'Amount',
             'Currency',
+            'VAT Rate',
+            'VAT Amount',
+            'Total Amount',
             'Exchange Rate',
             'Amount (AED)',
             'Description',
             'Proof URL',
+            'Metadata (JSON)', // Serialized for reference
         ];
 
         // CSV rows
         const rows = transactions.map(t => [
-            t.createdAt.toLocaleDateString(),
+            t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date).toLocaleDateString(),
             t.unitId,
-            t.subProject || '',
             t.type,
             t.category,
+            t.vendor || '',
             t.amount.toFixed(2),
             t.currency,
+            (t.vatRate || 0).toString() + '%',
+            (t.vatAmount || 0).toFixed(2),
+            (t.totalAmount || t.amount).toFixed(2),
             t.exchangeRate?.toFixed(4) || '1.0000',
             t.amountInAED.toFixed(2),
             t.description || '',
             t.proofUrl || '',
+            t.metadata ? JSON.stringify(t.metadata) : '',
         ]);
 
         // Combine headers and rows
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
         ].join('\n');
 
         // Create blob and download
@@ -216,4 +252,47 @@ export async function exportLedgerToCSV(
         console.error('Error exporting CSV:', error);
         throw new Error('Failed to export ledger');
     }
+}
+
+/**
+ * Get transactions filtered by metadata (for unit-specific views)
+ */
+export async function getTransactionsByClient(
+    clientId: string,
+    unitId: string = 'afconsult'
+): Promise<Transaction[]> {
+    const transactions = await getTransactions(undefined, undefined, unitId);
+    return transactions.filter(t => t.metadata && 'client_id' in t.metadata && t.metadata.client_id === clientId);
+}
+
+/**
+ * Calculate profitability for a specific client
+ */
+export async function getClientProfitability(
+    clientId: string
+): Promise<{ income: number; expenses: number; profit: number; billableExpenses: number }> {
+    const transactions = await getTransactionsByClient(clientId);
+
+    let income = 0;
+    let expenses = 0;
+    let billableExpenses = 0;
+
+    transactions.forEach(t => {
+        const amount = t.amountInAED || 0;
+        if (t.type === 'INCOME') {
+            income += amount;
+        } else {
+            expenses += amount;
+            if (t.metadata && 'is_billable' in t.metadata && t.metadata.is_billable) {
+                billableExpenses += amount;
+            }
+        }
+    });
+
+    return {
+        income,
+        expenses,
+        profit: income - expenses,
+        billableExpenses,
+    };
 }
