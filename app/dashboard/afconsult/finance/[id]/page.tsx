@@ -14,7 +14,7 @@ interface LineItem {
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [formData, setFormData] = useState({
         invoiceNumber: 'INV-2026-001',
         status: 'Paid',
@@ -60,10 +60,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         alert('Export PDF functionality - would generate PDF here');
     };
 
-    const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this invoice?')) {
-            alert('Delete functionality - would delete and redirect');
-        }
+    const handleSave = () => {
+        alert('Save functionality - would save invoice data');
+    };
+
+    const confirmDelete = () => {
+        alert('Delete functionality - would delete and redirect');
+        setShowDeleteDialog(false);
     };
 
     return (
@@ -85,27 +88,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         style={{ borderRadius: '0.25rem' }}
                     >
                         <FileDown className="w-4 h-4" />
-                        Export PDF
+                        PDF
                     </button>
-                    {isEditing ? (
-                        <button
-                            type="submit"
-                            form="invoice-form"
-                            className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
-                            style={{ borderRadius: '0.25rem' }}
-                        >
-                            <Save className="w-4 h-4" />
-                            Save Changes
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
-                            style={{ borderRadius: '0.25rem' }}
-                        >
-                            Edit Invoice
-                        </button>
-                    )}
+                    <button
+                        onClick={handleSave}
+                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
+                        style={{ borderRadius: '0.25rem' }}
+                    >
+                        <Save className="w-4 h-4" />
+                        Save
+                    </button>
                 </div>
             </div>
 
@@ -121,8 +113,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                         type="text"
                                         value={formData.invoiceNumber}
                                         onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                                        disabled={!isEditing}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                         style={{ borderRadius: '0.25rem' }}
                                     />
                                 </div>
@@ -132,8 +123,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        disabled={!isEditing}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                         style={{ borderRadius: '0.25rem' }}
                                     >
                                         <option value="Draft">Draft</option>
@@ -150,8 +140,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     type="text"
                                     value={formData.clientName}
                                     onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                                    disabled={!isEditing}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                     style={{ borderRadius: '0.25rem' }}
                                 />
                             </div>
@@ -163,8 +152,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                         type="date"
                                         value={formData.issuedDate}
                                         onChange={(e) => setFormData({ ...formData, issuedDate: e.target.value })}
-                                        disabled={!isEditing}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                         style={{ borderRadius: '0.25rem' }}
                                     />
                                 </div>
@@ -175,8 +163,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                         type="date"
                                         value={formData.dueDate}
                                         onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                        disabled={!isEditing}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                         style={{ borderRadius: '0.25rem' }}
                                     />
                                 </div>
@@ -186,8 +173,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     <select
                                         value={formData.currency}
                                         onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                        disabled={!isEditing}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                         style={{ borderRadius: '0.25rem' }}
                                     >
                                         <option value="AED">AED</option>
@@ -213,9 +199,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                                 type="text"
                                                 value={item.itemName}
                                                 onChange={(e) => updateLineItem(item.id, 'itemName', e.target.value)}
-                                                disabled={!isEditing}
                                                 placeholder="Service/Product"
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
@@ -226,9 +211,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                                 type="text"
                                                 value={item.description}
                                                 onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                                disabled={!isEditing}
                                                 placeholder="Brief description"
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
@@ -240,8 +224,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                                 min="1"
                                                 value={item.quantity}
                                                 onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 1)}
-                                                disabled={!isEditing}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
@@ -254,40 +237,35 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                                 min="0"
                                                 value={item.amount}
                                                 onChange={(e) => updateLineItem(item.id, 'amount', parseFloat(e.target.value) || 0)}
-                                                disabled={!isEditing}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
 
                                         <div className="col-span-1 flex items-end justify-center pb-2">
-                                            {isEditing && (
-                                                <button
-                                                    onClick={() => removeLineItem(item.id)}
-                                                    disabled={lineItems.length === 1}
-                                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                    style={{ borderRadius: '0.25rem' }}
-                                                    title="Delete item"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => removeLineItem(item.id)}
+                                                disabled={lineItems.length === 1}
+                                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                style={{ borderRadius: '0.25rem' }}
+                                                title="Delete item"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             ))}
 
                             {/* Add Line Item Button */}
-                            {isEditing && (
-                                <button
-                                    onClick={addLineItem}
-                                    className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-afconsult hover:text-afconsult transition-colors flex items-center justify-center gap-2 font-sans text-sm"
-                                    style={{ borderRadius: '0.25rem' }}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Add Line Item
-                                </button>
-                            )}
+                            <button
+                                onClick={addLineItem}
+                                className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-afconsult hover:text-afconsult transition-colors flex items-center justify-center gap-2 font-sans text-sm"
+                                style={{ borderRadius: '0.25rem' }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Line Item
+                            </button>
 
                             <div className="pt-4 border-t border-gray-300 dark:border-gray-600 flex justify-between items-center">
                                 <span className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">Total Amount:</span>
@@ -304,17 +282,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
                         <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Invoice Actions</h3>
                         <div className="space-y-3">
-                            {isEditing && (
-                                <button
-                                    onClick={() => setIsEditing(false)}
-                                    className="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-sans"
-                                    style={{ borderRadius: '0.25rem' }}
-                                >
-                                    Cancel Editing
-                                </button>
-                            )}
                             <button
-                                onClick={handleDelete}
+                                onClick={() => setShowDeleteDialog(true)}
                                 className="w-full py-3 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-normal hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2 font-sans"
                                 style={{ borderRadius: '0.25rem' }}
                             >
@@ -343,6 +312,37 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            {showDeleteDialog && (
+                <>
+                    <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteDialog(false)} />
+                    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
+                            <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Delete Invoice?</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
+                                Are you sure you want to delete this invoice? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowDeleteDialog(false)}
+                                    className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-sans"
+                                    style={{ borderRadius: '0.25rem' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 py-2 bg-red-600 text-white font-normal hover:bg-red-700 transition-colors font-sans"
+                                    style={{ borderRadius: '0.25rem' }}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
