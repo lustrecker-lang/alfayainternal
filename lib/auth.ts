@@ -1,6 +1,7 @@
 import {
     getAuth,
     signInWithPopup,
+    signInWithEmailAndPassword,
     GoogleAuthProvider,
     signOut as firebaseSignOut,
     onAuthStateChanged,
@@ -13,6 +14,19 @@ export const auth = getAuth(app);
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
+
+/**
+ * Sign in with Email and Password
+ */
+export async function signInWithEmail(email: string, password: string): Promise<User> {
+    try {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        return result.user;
+    } catch (error: any) {
+        console.error('Email sign-in error:', error);
+        throw new Error(error.message || 'Failed to sign in with Email/Password');
+    }
+}
 
 /**
  * Sign in with Google popup

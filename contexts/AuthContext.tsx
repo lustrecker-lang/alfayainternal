@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthChange, signInWithGoogle, signOut } from '@/lib/auth';
+import { onAuthChange, signInWithGoogle, signInWithEmail as authSignInWithEmail, signOut } from '@/lib/auth';
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
     signIn: () => Promise<void>;
+    signInWithEmail: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -35,6 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const signInWithEmail = async (email: string, password: string) => {
+        try {
+            await authSignInWithEmail(email, password);
+        } catch (error) {
+            console.error('Email sign in failed:', error);
+            throw error;
+        }
+    };
+
     const logout = async () => {
         try {
             await signOut();
@@ -45,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signIn, logout }}>
+        <AuthContext.Provider value={{ user, loading, signIn, signInWithEmail, logout }}>
             {children}
         </AuthContext.Provider>
     );
