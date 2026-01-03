@@ -81,6 +81,7 @@ export interface TransactionFormData {
     amount: number;
     currency: 'AED' | 'EUR' | 'USD' | 'GBP';
     exchangeRate?: number;
+    amountInAED?: number; // Optional override for AED amount
     vatRate: number;
     type: 'INCOME' | 'EXPENSE';
     category: string;

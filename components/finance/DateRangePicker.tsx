@@ -34,29 +34,21 @@ export default function DateRangePicker({
 
     return (
         <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-gray-400" />
-
-            <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">From:</label>
-                <input
-                    type="date"
-                    value={formatDateForInput(startDate)}
-                    onChange={handleStartChange}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-            </div>
+            <input
+                type="date"
+                value={formatDateForInput(startDate)}
+                onChange={handleStartChange}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
 
             <span className="text-gray-400">—</span>
 
-            <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">To:</label>
-                <input
-                    type="date"
-                    value={formatDateForInput(endDate)}
-                    onChange={handleEndChange}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-            </div>
+            <input
+                type="date"
+                value={formatDateForInput(endDate)}
+                onChange={handleEndChange}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
 
             {(startDate || endDate) && (
                 <button

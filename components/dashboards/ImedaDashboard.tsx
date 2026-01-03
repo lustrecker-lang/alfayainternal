@@ -4,19 +4,7 @@ import TransactionDialog from '@/components/finance/TransactionDialog';
 export default function ImedaDashboard() {
     return (
         <div>
-            {/* Transaction Action */}
-            <div className="mb-6 flex justify-end">
-                <TransactionDialog
-                    defaultUnit="imeda"
-                    brandColor="imeda"
-                    triggerButton={
-                        <button className="flex items-center gap-2 px-4 py-2 bg-imeda text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm">
-                            <Plus className="w-4 h-4" />
-                            Add Transaction
-                        </button>
-                    }
-                />
-            </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white dark:bg-zinc-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">

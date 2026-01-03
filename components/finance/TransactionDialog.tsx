@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, FormEvent, useMemo } from 'react';
-import { X, Upload, DollarSign, FileText, ChevronDown } from 'lucide-react';
 import { saveTransaction } from '@/lib/finance';
 import { buildMetadata } from '@/types/finance';
 import type { TransactionFormData } from '@/types/finance';
 import { SUPPORTED_CURRENCIES, VAT_RATES, calculateVATFromGross, calculateExchangeRate } from '@/config/finance';
-import VendorCombobox from './VendorCombobox';
-import CategorySelect from './CategorySelect';
+import VendorCombobox from '@/components/finance/VendorCombobox';
+import ClientCombobox from '@/components/finance/ClientCombobox';
+import CategorySelect from '@/components/finance/CategorySelect';
+import { X, Upload, DollarSign, FileText, ChevronDown } from 'lucide-react';
 
 // Mock data sources - will be replaced with Firestore fetches later
 const AFCONSULT_CLIENTS = [
@@ -70,10 +71,25 @@ export default function TransactionDialog({
     // Bank statement workflow: whether VAT is included in total
     const [vatIncluded, setVatIncluded] = useState(true);
 
+    // VAT Logic: Standard (5%), Exempt (0%), or Custom (Manual)
+    const [vatMethod, setVatMethod] = useState<'standard' | 'exempt' | 'custom'>('standard');
+    const [customVatAmount, setCustomVatAmount] = useState<number>(0);
+
     // Foreign currency: user enters foreign amount + AED deducted
     const [foreignAmount, setForeignAmount] = useState(0);
 
     const [proofFile, setProofFile] = useState<File | null>(null);
+
+    // Smart Defaults: Switch VAT method based on currency
+    useEffect(() => {
+        if (formData.currency === 'AED') {
+            setVatMethod('standard');
+            setFormData(prev => ({ ...prev, vatRate: 5 }));
+        } else {
+            setVatMethod('exempt');
+            setFormData(prev => ({ ...prev, vatRate: 0 }));
+        }
+    }, [formData.currency]);
 
 
 
@@ -97,15 +113,34 @@ export default function TransactionDialog({
             appSlug: defaultSubProject || '',
         });
         setVatIncluded(true);
+        setVatMethod('standard');
+        setCustomVatAmount(0);
         setForeignAmount(0);
         setProofFile(null);
         setError(null);
     };
 
-    // Calculate VAT breakdown from gross amount (backwards calculation)
+    // Calculate VAT breakdown based on selected method
     const vatBreakdown = useMemo(() => {
-        return calculateVATFromGross(formData.amount, formData.vatRate, vatIncluded);
-    }, [formData.amount, formData.vatRate, vatIncluded]);
+        if (vatMethod === 'exempt') {
+            return {
+                netAmount: formData.amount,
+                vatAmount: 0,
+                totalAmount: formData.amount
+            };
+        }
+
+        if (vatMethod === 'custom') {
+            return {
+                netAmount: Math.max(0, formData.amount - customVatAmount),
+                vatAmount: customVatAmount,
+                totalAmount: formData.amount
+            };
+        }
+
+        // Standard: Backwards calculation from Gross (Total) Amount
+        return calculateVATFromGross(formData.amount, 5, true);
+    }, [formData.amount, vatMethod, customVatAmount]);
 
     // Calculate implied exchange rate for foreign currencies
     const impliedExchangeRate = useMemo(() => {
@@ -132,7 +167,8 @@ export default function TransactionDialog({
 
             // AFCONSULT-specific validation
             if (formData.unitId === 'afconsult') {
-                if (formData.type === 'INCOME' && !formData.clientId) {
+                // For INCOME, client is selected via ClientCombobox which sets formData.vendor
+                if (formData.type === 'INCOME' && !formData.vendor) {
                     throw new Error('Client is required for income');
                 }
                 if (formData.type === 'EXPENSE' && !formData.isOperational && !formData.clientId) {
@@ -140,26 +176,34 @@ export default function TransactionDialog({
                 }
             }
 
+            // Validation for Custom VAT
+            if (vatMethod === 'custom' && customVatAmount >= formData.amount) {
+                throw new Error('VAT amount cannot be equal to or exceed total amount');
+            }
+
             // Build metadata
             const metadata = buildMetadata(formData);
 
-            // Prepare data for save - override with calculated values
-            const data: TransactionFormData = {
-                ...formData,
-                // The formData.amount is the TOTAL (gross) from bank
-                // We need to pass the calculated values to the save function
-                exchangeRate: formData.currency !== 'AED' ? impliedExchangeRate : undefined,
-                proofFile: proofFile || undefined,
-            };
-
-            // Pass vatIncluded flag and VAT breakdown for proper saving
-            await saveTransaction(data, metadata, {
-                vatIncluded,
-                netAmount: vatBreakdown.netAmount,
-                vatAmount: vatBreakdown.vatAmount,
-                totalAmount: vatBreakdown.totalAmount,
-                foreignAmount: formData.currency !== 'AED' ? foreignAmount : undefined,
-            });
+            // Prepare transaction data with correct calculations
+            // We pass the calculated values as the 3rd argument (BankStatementContext)
+            await saveTransaction(
+                {
+                    ...formData,
+                    // Ensure VAT rate is correct based on method
+                    vatRate: vatMethod === 'exempt' ? 0 : (vatMethod === 'standard' ? 5 : 0),
+                    // Handle currency conversion for display/reporting logic inside saveTransaction
+                    exchangeRate: formData.currency === 'AED' ? 1 : impliedExchangeRate,
+                    proofFile: proofFile || undefined,
+                },
+                metadata,
+                {
+                    vatIncluded,
+                    netAmount: vatBreakdown.netAmount,
+                    vatAmount: vatBreakdown.vatAmount,
+                    totalAmount: vatBreakdown.totalAmount,
+                    foreignAmount: formData.currency !== 'AED' ? foreignAmount : undefined,
+                }
+            );
 
             resetForm();
             setIsOpen(false);
@@ -262,16 +306,25 @@ export default function TransactionDialog({
                                         />
                                     </div>
 
-                                    {/* Vendor with Combobox */}
+                                    {/* Vendor/Client Selection - depends on transaction type */}
                                     <div>
                                         <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
-                                            {formData.type === 'INCOME' ? 'Received From *' : 'Vendor / Supplier *'}
+                                            {formData.type === 'INCOME' ? 'Received From / Client *' : 'Paid To / Vendor *'}
                                         </label>
-                                        <VendorCombobox
-                                            value={formData.vendor}
-                                            onChange={(value) => setFormData({ ...formData, vendor: value })}
-                                            placeholder={formData.type === 'INCOME' ? 'e.g. Client Name' : 'e.g. Emirates Airlines'}
-                                        />
+                                        {formData.type === 'INCOME' ? (
+                                            <ClientCombobox
+                                                value={formData.vendor}
+                                                onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                unitId={formData.unitId}
+                                                placeholder="e.g., Client Company Name"
+                                            />
+                                        ) : (
+                                            <VendorCombobox
+                                                value={formData.vendor}
+                                                onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                placeholder="e.g., Emirates Airlines"
+                                            />
+                                        )}
                                     </div>
 
                                     {/* Currency */}
@@ -328,7 +381,10 @@ export default function TransactionDialog({
                                     {/* Total Amount (from Bank) - Always AED */}
                                     <div className={formData.currency !== 'AED' ? '' : 'col-span-2'}>
                                         <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
-                                            {formData.currency !== 'AED' ? 'AED Deducted (from Bank) *' : 'Total Amount (from Bank) *'}
+                                            {formData.type === 'INCOME'
+                                                ? (formData.currency !== 'AED' ? 'AED Received (into Bank) *' : 'Total Received (into Bank) *')
+                                                : (formData.currency !== 'AED' ? 'AED Deducted (from Bank) *' : 'Total Deducted (from Bank) *')
+                                            }
                                         </label>
                                         <input
                                             type="number"
@@ -343,29 +399,50 @@ export default function TransactionDialog({
                                         />
                                     </div>
 
-                                    {/* VAT Included Toggle + Rate */}
-                                    <div className="col-span-2 flex items-center gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={vatIncluded}
-                                                onChange={(e) => setVatIncluded(e.target.checked)}
-                                                className="w-4 h-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
-                                            />
-                                            <span className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">
-                                                VAT included in total
-                                            </span>
-                                        </label>
+                                    {/* VAT Calculation Method */}
+                                    <div className="col-span-2 space-y-2">
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">VAT Treatment</label>
                                         <select
-                                            value={formData.vatRate}
-                                            onChange={(e) => setFormData({ ...formData, vatRate: parseInt(e.target.value) })}
-                                            className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none text-sm font-sans"
+                                            value={vatMethod}
+                                            onChange={(e) => {
+                                                const method = e.target.value as 'standard' | 'exempt' | 'custom';
+                                                setVatMethod(method);
+                                                if (method === 'standard') setFormData(prev => ({ ...prev, vatRate: 5 }));
+                                                if (method === 'exempt') setFormData(prev => ({ ...prev, vatRate: 0 }));
+                                                if (method === 'custom') setFormData(prev => ({ ...prev, vatRate: 0 }));
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
                                             style={{ borderRadius: '0.25rem' }}
                                         >
-                                            {VAT_RATES.map(rate => (
-                                                <option key={rate.value} value={rate.value}>{rate.label}</option>
-                                            ))}
+                                            <option value="standard">5% (UAE Standard)</option>
+                                            <option value="exempt">0% / Exempt / Foreign</option>
+                                            <option value="custom">Custom Amount (Manual)</option>
                                         </select>
+
+                                        {/* Warning for Foreign + 5% (Expense only) */}
+                                        {formData.type === 'EXPENSE' && formData.currency !== 'AED' && vatMethod === 'standard' && (
+                                            <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                                                <span>⚠️ Warning: You usually cannot claim UAE VAT on foreign expenses.</span>
+                                            </div>
+                                        )}
+
+                                        {/* Custom VAT Input */}
+                                        {vatMethod === 'custom' && (
+                                            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <label className="block text-xs font-normal text-gray-500 mb-1 font-sans">Enter VAT Amount manually from receipt</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-400 text-sm">{SUPPORTED_CURRENCIES.find(c => c === formData.currency) || formData.currency}</span>
+                                                    <input
+                                                        type="number"
+                                                        value={customVatAmount || ''}
+                                                        onChange={(e) => setCustomVatAmount(parseFloat(e.target.value) || 0)}
+                                                        className="w-full pl-12 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
+                                                        style={{ borderRadius: '0.25rem' }}
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -376,7 +453,10 @@ export default function TransactionDialog({
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         rows={2}
-                                        placeholder="Optional notes..."
+                                        placeholder={formData.type === 'INCOME'
+                                            ? 'e.g., Payment for Project Alpha Milestone 1'
+                                            : 'e.g., Client lunch meeting'
+                                        }
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none resize-none font-sans"
                                         style={{ borderRadius: '0.25rem' }}
                                     />
@@ -516,20 +596,19 @@ function renderSectionB(
                     </div>
                 )}
 
-                {/* Client & Project (if not operational) */}
-                {(type === 'INCOME' || !formData.isOperational) && (
+                {/* Client & Project (Expense only - if not operational) */}
+                {type === 'EXPENSE' && !formData.isOperational && (
                     <div className="grid grid-cols-2 gap-4">
                         {/* Client */}
                         <div>
                             <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
-                                Client {type === 'INCOME' ? '*' : ''}
+                                Client
                             </label>
                             <select
                                 value={formData.clientId}
                                 onChange={(e) => setFormData({ ...formData, clientId: e.target.value, projectId: '' })}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
                                 style={{ borderRadius: '0.25rem' }}
-                                required={type === 'INCOME'}
                             >
                                 <option value="">Select client...</option>
                                 {AFCONSULT_CLIENTS.map((client) => (
@@ -538,53 +617,35 @@ function renderSectionB(
                             </select>
                         </div>
 
-                        {/* Project */}
-                        <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Project</label>
-                            <select
-                                value={formData.projectId}
-                                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                style={{ borderRadius: '0.25rem' }}
-                                disabled={!formData.clientId}
-                            >
-                                <option value="">Select project...</option>
-                                {filteredProjects.map((project) => (
-                                    <option key={project.id} value={project.id}>{project.name}</option>
-                                ))}
-                            </select>
+                        {/* Billable Checkbox */}
+                        <div className="flex items-center gap-3 pt-6">
+                            <input
+                                type="checkbox"
+                                id="isBillable"
+                                checked={formData.isBillable}
+                                onChange={(e) => setFormData({ ...formData, isBillable: e.target.checked })}
+                                className="w-4 h-4 text-afconsult border-gray-300 rounded focus:ring-afconsult"
+                            />
+                            <label htmlFor="isBillable" className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">
+                                Billable to Client
+                            </label>
                         </div>
+                    </div>
+                )}
 
-                        {/* Invoice Reference (Income only) */}
-                        {type === 'INCOME' && (
-                            <div className="col-span-2">
-                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Invoice Reference</label>
-                                <input
-                                    type="text"
-                                    value={formData.invoiceReference}
-                                    onChange={(e) => setFormData({ ...formData, invoiceReference: e.target.value })}
-                                    placeholder="e.g. INV-2026-001"
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                    style={{ borderRadius: '0.25rem' }}
-                                />
-                            </div>
-                        )}
-
-                        {/* Billable Checkbox (Expense only) */}
-                        {type === 'EXPENSE' && (
-                            <div className="col-span-2 flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    id="isBillable"
-                                    checked={formData.isBillable}
-                                    onChange={(e) => setFormData({ ...formData, isBillable: e.target.checked })}
-                                    className="w-4 h-4 text-afconsult border-gray-300 rounded focus:ring-afconsult"
-                                />
-                                <label htmlFor="isBillable" className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">
-                                    Billable to Client
-                                </label>
-                            </div>
-                        )}
+                {/* Invoice Reference (Income only) */}
+                {type === 'INCOME' && (
+                    <div>
+                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Linked Invoice #</label>
+                        <input
+                            type="text"
+                            value={formData.invoiceReference}
+                            onChange={(e) => setFormData({ ...formData, invoiceReference: e.target.value })}
+                            placeholder="e.g. INV-2026-001"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
+                            style={{ borderRadius: '0.25rem' }}
+                        />
+                        <p className="text-xs text-gray-400 mt-1 font-sans">Enter the invoice number this payment settles.</p>
                     </div>
                 )}
             </div>

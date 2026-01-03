@@ -18,7 +18,7 @@ import type { Transaction, TransactionFormData, FinancialSummary, TransactionMet
 /**
  * Bank statement calculation context
  */
-interface BankStatementContext {
+export interface BankStatementContext {
     vatIncluded: boolean;
     netAmount: number;
     vatAmount: number;
@@ -66,10 +66,19 @@ export async function saveTransaction(
         }
 
         // Calculate amount in AED (normalized)
-        const exchangeRate = data.exchangeRate || 1;
-        const amountInAED = data.currency === 'AED'
-            ? totalAmount
-            : totalAmount * exchangeRate;
+        // When bankContext is present, totalAmount is ALREADY in AED (user enters "Amount Deducted from Bank in AED")
+        // Only apply exchange rate conversion for legacy flow without bankContext
+        let amountInAED: number;
+        if (bankContext) {
+            // Bank statement flow: totalAmount IS the AED amount from the bank
+            amountInAED = totalAmount;
+        } else {
+            // Legacy flow: convert to AED if needed
+            const exchangeRate = data.exchangeRate || 1;
+            amountInAED = data.currency === 'AED'
+                ? totalAmount
+                : totalAmount * exchangeRate;
+        }
 
         // Create transaction document
         const transaction: Record<string, any> = {
@@ -273,6 +282,192 @@ export async function deleteVendor(id: string): Promise<void> {
     }
 }
 
+// ============================================================
+// CLIENT MANAGEMENT (Per Business Unit)
+// ============================================================
+
+// Simple client for dropdowns
+export interface Client {
+    id: string;
+    name: string;
+    unitId: string;
+    createdAt?: Date;
+}
+
+// Full client record for client management pages
+export interface ClientFull extends Client {
+    industry?: string;
+    contact?: string;
+    email?: string;
+    phone?: string;
+    address?: {
+        street_line1?: string;
+        street_line2?: string;
+        city?: string;
+        zip_code?: string;
+        country?: string;
+    };
+}
+
+/**
+ * Get all clients for a specific business unit
+ */
+export async function getClients(unitId: string): Promise<ClientFull[]> {
+    try {
+        const q = query(
+            collection(db, 'clients'),
+            where('unitId', '==', unitId),
+            orderBy('name', 'asc')
+        );
+        const snapshot = await getDocs(q);
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                name: data.name,
+                unitId: data.unitId,
+                industry: data.industry,
+                contact: data.contact,
+                email: data.email,
+                phone: data.phone,
+                address: data.address,
+                createdAt: data.createdAt?.toDate() || new Date(),
+            };
+        });
+    } catch (error) {
+        console.error('Error fetching clients:', error);
+        return [];
+    }
+}
+
+/**
+ * Get a single client by ID
+ */
+export async function getClientById(clientId: string): Promise<ClientFull | null> {
+    try {
+        const docSnap = await getDoc(doc(db, 'clients', clientId));
+        if (!docSnap.exists()) return null;
+
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            name: data.name,
+            unitId: data.unitId,
+            industry: data.industry,
+            contact: data.contact,
+            email: data.email,
+            phone: data.phone,
+            address: data.address,
+            createdAt: data.createdAt?.toDate() || new Date(),
+        };
+    } catch (error) {
+        console.error('Error fetching client:', error);
+        return null;
+    }
+}
+
+/**
+ * Add a new client (simple - for combobox)
+ */
+export async function addClient(unitId: string, name: string): Promise<Client> {
+    try {
+        // Check if client already exists (case-insensitive)
+        const existingClients = await getClients(unitId);
+        const exists = existingClients.find(
+            c => c.name.toLowerCase() === name.trim().toLowerCase()
+        );
+
+        if (exists) {
+            return exists;
+        }
+
+        const docRef = await addDoc(collection(db, 'clients'), {
+            name: name.trim(),
+            unitId: unitId,
+            createdAt: Timestamp.now(),
+        });
+
+        return {
+            id: docRef.id,
+            name: name.trim(),
+            unitId: unitId,
+            createdAt: new Date(),
+        };
+    } catch (error) {
+        console.error('Error adding client:', error);
+        throw new Error('Failed to add client');
+    }
+}
+
+/**
+ * Add a new client with full details
+ */
+export async function addClientFull(client: Omit<ClientFull, 'id' | 'createdAt'>): Promise<ClientFull> {
+    try {
+        // Helper to recursively remove undefined values (Firestore doesn't accept them)
+        const removeUndefined = (obj: Record<string, unknown>): Record<string, unknown> => {
+            const cleaned: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(obj)) {
+                if (value !== undefined) {
+                    if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+                        const nestedCleaned = removeUndefined(value as Record<string, unknown>);
+                        if (Object.keys(nestedCleaned).length > 0) {
+                            cleaned[key] = nestedCleaned;
+                        }
+                    } else {
+                        cleaned[key] = value;
+                    }
+                }
+            }
+            return cleaned;
+        };
+
+        const cleanedClient = removeUndefined(client as Record<string, unknown>);
+
+        const docRef = await addDoc(collection(db, 'clients'), {
+            ...cleanedClient,
+            createdAt: Timestamp.now(),
+        });
+
+        return {
+            id: docRef.id,
+            ...client,
+            createdAt: new Date(),
+        };
+    } catch (error) {
+        console.error('Error adding client:', error);
+        throw new Error('Failed to add client');
+    }
+}
+
+/**
+ * Update an existing client
+ */
+export async function updateClient(clientId: string, updates: Partial<ClientFull>): Promise<void> {
+    try {
+        await updateDoc(doc(db, 'clients', clientId), {
+            ...updates,
+            updatedAt: Timestamp.now(),
+        });
+    } catch (error) {
+        console.error('Error updating client:', error);
+        throw new Error('Failed to update client');
+    }
+}
+
+/**
+ * Delete a client
+ */
+export async function deleteClient(clientId: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, 'clients', clientId));
+    } catch (error) {
+        console.error('Error deleting client:', error);
+        throw new Error('Failed to delete client');
+    }
+}
+
 /**
  * Legacy: Get unique vendor names from transactions (fallback)
  */
@@ -395,6 +590,10 @@ export function formatCurrency(amount: number, currency: string = 'AED'): string
  * Export transactions to CSV and trigger download
  * Core fields are columns, metadata is serialized as JSON
  */
+/**
+ * Export transactions to CSV and trigger download
+ * Core fields are columns, metadata is flattened for accountant visibility
+ */
 export async function exportLedgerToCSV(
     startDate?: Date,
     endDate?: Date,
@@ -403,43 +602,79 @@ export async function exportLedgerToCSV(
     try {
         const transactions = await getTransactions(startDate, endDate, unitId);
 
-        // CSV headers (core fields only - accountant friendly)
+        // CSV headers (core fields + flattened metadata for accountants)
         const headers = [
+            'Transaction ID',
             'Date',
-            'Unit',
+            'Business Unit',
             'Type',
             'Category',
-            'Vendor',
-            'Amount',
-            'Currency',
-            'VAT Rate',
-            'VAT Amount',
-            'Total Amount',
-            'Exchange Rate',
-            'Amount (AED)',
+            'Vendor / Client',
             'Description',
+            // Financials
+            'Currency',
+            'Net Amount (Original)',
+            'VAT Rate (%)',
+            'VAT Amount (Original)',
+            'Total Amount (Original)',
+            'Exchange Rate',
+            'Total Amount (AED)',
+            // Common Metadata Flattened
+            'Client Name',
+            'Project Name / Code',
+            'Consultant / Staff',
+            'Invoice #',
+            'Billable',
+            'Payment Method',
+            // Audit
             'Proof URL',
-            'Metadata (JSON)', // Serialized for reference
+            'Raw Metadata (JSON)',
         ];
 
         // CSV rows
-        const rows = transactions.map(t => [
-            t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date).toLocaleDateString(),
-            t.unitId,
-            t.type,
-            t.category,
-            t.vendor || '',
-            t.amount.toFixed(2),
-            t.currency,
-            (t.vatRate || 0).toString() + '%',
-            (t.vatAmount || 0).toFixed(2),
-            (t.totalAmount || t.amount).toFixed(2),
-            t.exchangeRate?.toFixed(4) || '1.0000',
-            t.amountInAED.toFixed(2),
-            t.description || '',
-            t.proofUrl || '',
-            t.metadata ? JSON.stringify(t.metadata) : '',
-        ]);
+        const rows = transactions.map(t => {
+            // Safe helper for metadata access
+            const meta = t.metadata || {};
+
+            // Extract common metadata values safely
+            const clientName = 'client_name' in meta ? String(meta.client_name) : '';
+            const projectName = 'project_name' in meta ? String(meta.project_name) :
+                'project_code' in meta ? String(meta.project_code) : '';
+            const consultant = 'consultant_name' in meta ? String(meta.consultant_name) :
+                'staff_name' in meta ? String(meta.staff_name) : '';
+            const invoiceNum = 'invoice_number' in meta ? String(meta.invoice_number) :
+                'invoice_link' in meta ? String(meta.invoice_link) : '';
+            const billable = 'is_billable' in meta ? (meta.is_billable ? 'Yes' : 'No') : '';
+            const paymentMethod = 'payment_method' in meta ? String(meta.payment_method) : '';
+
+            return [
+                t.id,
+                t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date).toLocaleDateString(),
+                t.unitId.toUpperCase(),
+                t.type,
+                t.category,
+                t.vendor || '',
+                t.description || '',
+                // Financials
+                t.currency,
+                t.amount.toFixed(2),
+                (t.vatRate || 0).toString() + '%',
+                (t.vatAmount || 0).toFixed(2),
+                (t.totalAmount || t.amount).toFixed(2),
+                t.exchangeRate?.toFixed(4) || '1.0000',
+                t.amountInAED.toFixed(2),
+                // Metadata
+                clientName,
+                projectName,
+                consultant,
+                invoiceNum,
+                billable,
+                paymentMethod,
+                // Audit
+                t.proofUrl || '',
+                JSON.stringify(meta), // Keep raw JSON just in case
+            ];
+        });
 
         // Combine headers and rows
         const csvContent = [
@@ -452,7 +687,7 @@ export async function exportLedgerToCSV(
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
 
-        const filename = `ledger_export_${new Date().toISOString().split('T')[0]}.csv`;
+        const filename = `ledger_export_${unitId || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', filename);
         link.style.visibility = 'hidden';

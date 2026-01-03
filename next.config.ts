@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    // Full Next.js features enabled for Firebase App Hosting
+    output: 'export',
+    images: {
+        unoptimized: true,
+    },
 };
 
 export default nextConfig;

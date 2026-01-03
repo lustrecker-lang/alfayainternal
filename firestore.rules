@@ -8,6 +8,16 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
+    // Vendors - Global vendor list
+    match /vendors/{vendor} {
+      allow read, write: if true;
+    }
+    
+    // Clients - Per-unit client list
+    match /clients/{client} {
+      allow read, write: if true;
+    }
+    
     // Default: deny access to all other collections
     match /{document=**} {
       allow read, write: if false;

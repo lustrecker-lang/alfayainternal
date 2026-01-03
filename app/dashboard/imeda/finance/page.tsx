@@ -18,7 +18,7 @@ export default function FinancePage() {
     const loadTransactions = async () => {
         setLoading(true);
         try {
-            const data = await getTransactions(undefined, undefined, 'afconsult');
+            const data = await getTransactions(undefined, undefined, 'imeda');
             setTransactions(data);
         } catch (error) {
             console.error('Error loading transactions:', error);
@@ -58,12 +58,12 @@ export default function FinancePage() {
 
                 {/* Transaction Dialog */}
                 <TransactionDialog
-                    defaultUnit="afconsult"
-                    brandColor="afconsult"
+                    defaultUnit="imeda"
+                    brandColor="imeda"
                     onSuccess={loadTransactions}
                     triggerButton={
                         <button
-                            className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
+                            className="flex items-center gap-2 px-4 py-2 bg-imeda text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
                             style={{ borderRadius: '0.25rem' }}
                         >
                             <Plus className="w-4 h-4" />
@@ -78,7 +78,7 @@ export default function FinancePage() {
                 <button
                     onClick={() => setView('INCOME')}
                     className={`flex-1 py-2 text-sm font-normal font-sans transition-all ${view === 'INCOME'
-                        ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
+                        ? 'bg-white dark:bg-zinc-700 text-imeda shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                     style={{ borderRadius: '0.25rem' }}
@@ -88,7 +88,7 @@ export default function FinancePage() {
                 <button
                     onClick={() => setView('EXPENSE')}
                     className={`flex-1 py-2 text-sm font-normal font-sans transition-all ${view === 'EXPENSE'
-                        ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
+                        ? 'bg-white dark:bg-zinc-700 text-imeda shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                     style={{ borderRadius: '0.25rem' }}
@@ -99,17 +99,17 @@ export default function FinancePage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-afconsult to-pink-800 text-white rounded-lg p-6 shadow-lg">
+                <div className="bg-gradient-to-br from-imeda to-blue-600 text-white rounded-lg p-6 shadow-lg">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-pink-100 text-sm font-medium font-sans mb-1">Total {view === 'INCOME' ? 'Income' : 'Expenses'}</p>
+                            <p className="text-blue-100 text-sm font-medium font-sans mb-1">Total {view === 'INCOME' ? 'Income' : 'Expenses'}</p>
                             <h2 className="text-3xl font-bold font-mono">{formatCurrency(totalAmount)}</h2>
                         </div>
                         <div className="p-2 bg-white/10 rounded-lg">
                             {view === 'INCOME' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownLeft className="w-6 h-6" />}
                         </div>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-sm text-pink-100 font-sans">
+                    <div className="mt-4 flex items-center gap-2 text-sm text-blue-100 font-sans">
                         <span className="bg-white/20 px-2 py-0.5 rounded text-xs">All Time</span>
                         <span>Across all categories</span>
                     </div>
@@ -126,7 +126,7 @@ export default function FinancePage() {
                         </div>
                     </div>
                     <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 font-sans">
-                        <span className="text-afconsult font-medium">Recent activity</span>
+                        <span className="text-imeda font-medium">Recent activity</span>
                     </div>
                 </div>
             </div>
@@ -139,7 +139,7 @@ export default function FinancePage() {
                     placeholder="Search transactions..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 rounded-lg text-sm focus:ring-2 focus:ring-afconsult focus:border-transparent outline-none font-sans"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 rounded-lg text-sm focus:ring-2 focus:ring-imeda focus:border-transparent outline-none font-sans"
                 />
             </div>
 

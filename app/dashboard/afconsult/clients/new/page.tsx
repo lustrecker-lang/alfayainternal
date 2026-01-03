@@ -3,8 +3,14 @@
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { addClientFull } from '@/lib/finance';
 
 export default function NewClientPage() {
+    const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
     const [formData, setFormData] = useState({
         name: '',
         industry: '',
@@ -18,6 +24,42 @@ export default function NewClientPage() {
         country: '',
     });
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.name.trim()) {
+            setError('Company name is required');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            await addClientFull({
+                name: formData.name.trim(),
+                unitId: 'afconsult',
+                industry: formData.industry.trim() || undefined,
+                contact: formData.contact.trim() || undefined,
+                email: formData.email.trim() || undefined,
+                phone: formData.phone.trim() || undefined,
+                address: {
+                    street_line1: formData.street_line1.trim() || undefined,
+                    street_line2: formData.street_line2.trim() || undefined,
+                    city: formData.city.trim() || undefined,
+                    zip_code: formData.zip_code.trim() || undefined,
+                    country: formData.country.trim() || undefined,
+                },
+            });
+
+            router.push('/dashboard/afconsult/clients');
+        } catch (err) {
+            console.error('Error creating client:', err);
+            setError('Failed to create client. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header with Back, Centered Title, and Save */}
@@ -28,15 +70,27 @@ export default function NewClientPage() {
                     </button>
                 </Link>
                 <h1 className="text-3xl text-gray-900 dark:text-white absolute left-1/2 -translate-x-1/2">Add Client</h1>
-                <button type="submit" form="client-form" className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans" style={{ borderRadius: '0.25rem' }}>
+                <button
+                    type="submit"
+                    form="client-form"
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans disabled:opacity-50"
+                    style={{ borderRadius: '0.25rem' }}
+                >
                     <Save className="w-4 h-4" />
-                    Save
+                    {isSubmitting ? 'Saving...' : 'Save'}
                 </button>
             </div>
 
+            {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-sans" style={{ borderRadius: '0.25rem' }}>
+                    {error}
+                </div>
+            )}
+
             {/* Form - Full Width Two Column */}
             <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                <form id="client-form" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <form id="client-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column - Company Info */}
                     <div className="space-y-6">
                         <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Company Details</h3>
@@ -50,11 +104,12 @@ export default function NewClientPage() {
                                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                 style={{ borderRadius: '0.25rem' }}
                                 placeholder="e.g., Global Industries"
+                                required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Industry *</label>
+                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Industry</label>
                             <input
                                 type="text"
                                 value={formData.industry}
@@ -66,7 +121,7 @@ export default function NewClientPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Street Address *</label>
+                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Street Address</label>
                             <input
                                 type="text"
                                 value={formData.street_line1}
@@ -91,7 +146,7 @@ export default function NewClientPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">City *</label>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">City</label>
                                 <input
                                     type="text"
                                     value={formData.city}
@@ -103,7 +158,7 @@ export default function NewClientPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">ZIP Code *</label>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">ZIP Code</label>
                                 <input
                                     type="text"
                                     value={formData.zip_code}
@@ -116,7 +171,7 @@ export default function NewClientPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Country *</label>
+                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Country</label>
                             <input
                                 type="text"
                                 value={formData.country}
@@ -133,7 +188,7 @@ export default function NewClientPage() {
                         <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Primary Contact</h3>
 
                         <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Full Name *</label>
+                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Full Name</label>
                             <input
                                 type="text"
                                 value={formData.contact}
@@ -145,7 +200,7 @@ export default function NewClientPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Email *</label>
+                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Email</label>
                             <input
                                 type="email"
                                 value={formData.email}
