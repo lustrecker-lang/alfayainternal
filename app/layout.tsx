@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Unna, Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from 'next-themes';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const unna = Unna({
     subsets: ['latin'],
@@ -31,7 +32,9 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning className={`${unna.variable} ${inter.variable}`}>
             <body className="font-sans antialiased" suppressHydrationWarning>
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-                    {children}
+                    <AuthProvider>
+                        {children}
+                    </AuthProvider>
                 </ThemeProvider>
             </body>
         </html>
