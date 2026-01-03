@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Save, Trash2, Mail, Phone, Briefcase, DollarSign, Award, Clock } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Mail, Phone, DollarSign, Award, Clock, FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use } from 'react';
 
@@ -106,33 +106,6 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                                 </div>
                             </div>
 
-                            {/* Contact Section */}
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Contact Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Email Address</label>
-                                        <input
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Phone Number</label>
-                                        <input
-                                            type="tel"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Bio / Experience Section */}
                             <div className="space-y-6">
                                 <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Consultant Bio</h3>
@@ -171,41 +144,67 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                     </div>
                 </div>
 
-            </div>
-        </div>
-
-            {/* Delete Confirmation Dialog */ }
-    {
-        showDeleteDialog && (
-            <>
-                <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteDialog(false)} />
-                <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Archive Consultant?</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
-                            Are you sure you want to archive this consultant? This will remove them from the active list of staff members.
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowDeleteDialog(false)}
-                                className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-sans text-sm"
-                                style={{ borderRadius: '0.25rem' }}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="flex-1 py-2 bg-red-600 text-white font-normal hover:bg-red-700 transition-colors font-sans text-sm"
-                                style={{ borderRadius: '0.25rem' }}
-                            >
-                                Archive
-                            </button>
+                {/* Sidebar - Contextual Info */}
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Lifecycle Stats</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <div className="flex-1">
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Joined Date</p>
+                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.joinedDate}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <DollarSign className="w-4 h-4 text-gray-400" />
+                                <div className="flex-1">
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Billed YTD</p>
+                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED 142,500</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Award className="w-4 h-4 text-gray-400" />
+                                <div className="flex-1">
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Expertise Level</p>
+                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">Senior Partner</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </>
-        )
-    }
-        </div >
+            </div>
+
+            {/* Delete Confirmation Dialog */}
+            {showDeleteDialog && (
+                <>
+                    <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteDialog(false)} />
+                    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
+                            <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Archive Consultant?</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
+                                Are you sure you want to archive this consultant? This will remove them from the active list of staff members.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowDeleteDialog(false)}
+                                    className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-sans text-sm"
+                                    style={{ borderRadius: '0.25rem' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 py-2 bg-red-600 text-white font-normal hover:bg-red-700 transition-colors font-sans text-sm"
+                                    style={{ borderRadius: '0.25rem' }}
+                                >
+                                    Archive
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
     );
 }
