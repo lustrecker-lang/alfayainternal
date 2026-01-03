@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Save, FileDown, Trash2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, FileDown, Trash2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use } from 'react';
 
@@ -26,8 +26,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     });
 
     const [lineItems, setLineItems] = useState<LineItem[]>([
-        { id: '1', itemName: 'Consulting Services', description: 'Q4 Strategy Consulting', quantity: 40, amount: 250 },
-        { id: '2', itemName: 'Market Analysis', description: 'Competitive analysis report', quantity: 1, amount: 3000 },
+        { id: '1', itemName: '', description: '', quantity: 1, amount: 0 },
     ]);
 
     const addLineItem = () => {
@@ -42,7 +41,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     };
 
     const removeLineItem = (id: string) => {
-        setLineItems(lineItems.filter(item => item.id !== id));
+        if (lineItems.length > 1) {
+            setLineItems(lineItems.filter(item => item.id !== id));
+        }
     };
 
     const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
@@ -205,7 +206,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             {isEditing && (
                                 <button
                                     onClick={addLineItem}
-                                    className="flex items-center gap-1 px-3 py-1 text-xs font-normal text-afconsult hover:bg-afconsult/10 transition-colors font-sans"
+                                    className="flex items-center gap-1 px-3 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity text-xs font-normal font-sans"
                                     style={{ borderRadius: '0.25rem' }}
                                 >
                                     <Plus className="w-3 h-3" />
@@ -214,79 +215,76 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             )}
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {lineItems.map((item, index) => (
                                 <div key={item.id} className="border border-gray-200 dark:border-gray-700 p-4" style={{ borderRadius: '0.25rem' }}>
-                                    <div className="flex justify-between items-start mb-3">
-                                        <span className="text-xs text-gray-500 font-sans">Item #{index + 1}</span>
-                                        {isEditing && lineItems.length > 1 && (
-                                            <button
-                                                onClick={() => removeLineItem(item.id)}
-                                                className="text-red-600 hover:text-red-700"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
+                                    <div className="grid grid-cols-12 gap-3 items-start">
+                                        <div className="col-span-3">
                                             <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Item Name</label>
                                             <input
                                                 type="text"
                                                 value={item.itemName}
                                                 onChange={(e) => updateLineItem(item.id, 'itemName', e.target.value)}
                                                 disabled={!isEditing}
+                                                placeholder="Service/Product"
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
 
-                                        <div>
+                                        <div className="col-span-4">
                                             <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Description</label>
                                             <input
                                                 type="text"
                                                 value={item.description}
                                                 onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
                                                 disabled={!isEditing}
+                                                placeholder="Brief description"
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
 
-                                        <div>
+                                        <div className="col-span-2">
                                             <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Quantity</label>
                                             <input
                                                 type="number"
                                                 min="1"
                                                 value={item.quantity}
-                                                onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value))}
+                                                onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 1)}
                                                 disabled={!isEditing}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
 
-                                        <div>
-                                            <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Amount ({formData.currency})</label>
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Amount</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
                                                 min="0"
                                                 value={item.amount}
-                                                onChange={(e) => updateLineItem(item.id, 'amount', parseFloat(e.target.value))}
+                                                onChange={(e) => updateLineItem(item.id, 'amount', parseFloat(e.target.value) || 0)}
                                                 disabled={!isEditing}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ borderRadius: '0.25rem' }}
                                             />
                                         </div>
-                                    </div>
 
-                                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-right">
-                                        <span className="text-xs text-gray-500 font-sans">Subtotal: </span>
-                                        <span className="text-sm font-normal text-gray-900 dark:text-white font-sans">
-                                            {formData.currency} {(item.quantity * item.amount).toFixed(2)}
-                                        </span>
+                                        <div className="col-span-1 flex items-end justify-center pb-2">
+                                            {isEditing && (
+                                                <button
+                                                    onClick={() => removeLineItem(item.id)}
+                                                    disabled={lineItems.length === 1}
+                                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    style={{ borderRadius: '0.25rem' }}
+                                                    title="Delete item"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
