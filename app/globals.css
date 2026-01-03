@@ -40,10 +40,22 @@
 
   /* Traditional Border Radius */
   input,
-  select,
-  textarea,
   button,
   .rounded-lg {
+    border-radius: var(--radius) !important;
+  }
+
+  /* Select/Dropdown styling with proper padding for chevron */
+  select {
+    border-radius: var(--radius) !important;
+    padding-right: 2.5rem !important;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  textarea {
     border-radius: var(--radius) !important;
   }
 

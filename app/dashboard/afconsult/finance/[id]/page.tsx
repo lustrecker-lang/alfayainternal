@@ -82,6 +82,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     <h1 className="text-3xl text-gray-900 dark:text-white">Invoice Details</h1>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Delete Icon */}
+                    <button
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        style={{ borderRadius: '0.25rem' }}
+                        title="Delete Invoice"
+                    >
+                        <Trash2 className="w-5 h-5" />
+                    </button>
+                    {/* PDF Button */}
                     <button
                         onClick={handleExportPDF}
                         className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium font-sans"
@@ -90,6 +100,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <FileDown className="w-4 h-4" />
                         PDF
                     </button>
+                    {/* Save Button */}
                     <button
                         onClick={handleSave}
                         className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
@@ -123,8 +134,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                        style={{ borderRadius: '0.25rem' }}
+                                        className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none appearance-none bg-no-repeat bg-right"
+                                        style={{ borderRadius: '0.25rem', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center' }}
                                     >
                                         <option value="Draft">Draft</option>
                                         <option value="Sent">Sent</option>
@@ -173,8 +184,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     <select
                                         value={formData.currency}
                                         onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                        style={{ borderRadius: '0.25rem' }}
+                                        className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none appearance-none bg-no-repeat bg-right"
+                                        style={{ borderRadius: '0.25rem', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center' }}
                                     >
                                         <option value="AED">AED</option>
                                         <option value="EUR">EUR</option>
@@ -277,22 +288,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
 
-                {/* Sidebar - Actions */}
+                {/* Sidebar - Summary Only */}
                 <div className="space-y-4">
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Invoice Actions</h3>
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setShowDeleteDialog(true)}
-                                className="w-full py-3 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-normal hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2 font-sans"
-                                style={{ borderRadius: '0.25rem' }}
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete Invoice
-                            </button>
-                        </div>
-                    </div>
-
                     <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
                         <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Summary</h3>
                         <div className="space-y-2 text-sm font-sans">
