@@ -24,8 +24,9 @@ const AFCONSULT_PROJECTS = [
 ];
 
 const AFTECH_APPS = [
-    { slug: 'circles', name: 'Circles' },
-    { slug: 'whosfree', name: 'WhosFree' },
+    { slug: 'circles', name: 'Circles - Marketplace' },
+    { slug: 'whosfree', name: 'WhosFree - Social App' },
+    { slug: 'general', name: 'General Tech Overhead' },
 ];
 
 interface TransactionDialogProps {
@@ -160,7 +161,7 @@ export default function TransactionDialog({
             if (!formData.unitId) throw new Error('Business unit is required');
             if (formData.amount <= 0) throw new Error('Total amount is required');
             if (!formData.category) throw new Error('Category is required');
-            if (!formData.vendor) throw new Error('Vendor is required');
+            if (!formData.vendor && !(formData.unitId === 'aftech' && formData.appSlug === 'circles' && formData.type === 'INCOME')) throw new Error('Vendor is required');
             if (formData.currency !== 'AED' && foreignAmount <= 0) {
                 throw new Error('Foreign amount is required');
             }
@@ -236,7 +237,7 @@ export default function TransactionDialog({
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2">
-                                <DollarSign className={`w-5 h-5 text-${brandColor}`} />
+                                <DollarSign className={`w-5 h-5 ${brandColor === 'aftech' ? 'text-[#737373]' : `text-${brandColor}`}`} />
                                 <h2 className="text-xl text-gray-900 dark:text-white font-sans">
                                     {formData.type === 'INCOME' ? 'Log Income' : 'Log Expense'}
                                 </h2>
@@ -307,25 +308,28 @@ export default function TransactionDialog({
                                     </div>
 
                                     {/* Vendor/Client Selection - depends on transaction type */}
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
-                                            {formData.type === 'INCOME' ? 'Received From / Client *' : 'Paid To / Vendor *'}
-                                        </label>
-                                        {formData.type === 'INCOME' ? (
-                                            <ClientCombobox
-                                                value={formData.vendor}
-                                                onChange={(value) => setFormData({ ...formData, vendor: value })}
-                                                unitId={formData.unitId}
-                                                placeholder="e.g., Client Company Name"
-                                            />
-                                        ) : (
-                                            <VendorCombobox
-                                                value={formData.vendor}
-                                                onChange={(value) => setFormData({ ...formData, vendor: value })}
-                                                placeholder="e.g., Emirates Airlines"
-                                            />
-                                        )}
-                                    </div>
+                                    {/* HIDDEN for Circles Income (Payout Source replaces it in Section B) */}
+                                    {!(formData.unitId === 'aftech' && formData.appSlug === 'circles' && formData.type === 'INCOME') && (
+                                        <div>
+                                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
+                                                {formData.type === 'INCOME' ? 'Received From / Client *' : 'Paid To / Vendor *'}
+                                            </label>
+                                            {formData.type === 'INCOME' ? (
+                                                <ClientCombobox
+                                                    value={formData.vendor}
+                                                    onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                    unitId={formData.unitId}
+                                                    placeholder="e.g., Client Company Name"
+                                                />
+                                            ) : (
+                                                <VendorCombobox
+                                                    value={formData.vendor}
+                                                    onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                    placeholder="e.g., Emirates Airlines"
+                                                />
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Currency */}
                                     <div>
@@ -540,7 +544,8 @@ export default function TransactionDialog({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className={`flex-1 px-4 py-2 bg-${brandColor} text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-sans`}
+                                    className={`flex-1 px-4 py-2 text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-sans ${brandColor === 'aftech' ? 'bg-[#737373]' : `bg-${brandColor}`
+                                        }`}
                                     style={{ borderRadius: '0.25rem' }}
                                 >
                                     {isSubmitting ? 'Saving...' : 'Save Transaction'}
@@ -673,8 +678,10 @@ function renderSectionB(
                 <h3 className="text-sm font-normal uppercase tracking-wider text-gray-500 font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">
                     App Context
                 </h3>
+
+                {/* App Selector */}
                 <div>
-                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">App *</label>
+                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">App / Product *</label>
                     <select
                         value={formData.appSlug}
                         onChange={(e) => setFormData({ ...formData, appSlug: e.target.value })}
@@ -688,6 +695,45 @@ function renderSectionB(
                         ))}
                     </select>
                 </div>
+
+                {/* WhosFree Pre-Revenue Warning */}
+                {formData.appSlug === 'whosfree' && type === 'INCOME' && (
+                    <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 p-3 rounded border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                        <DollarSign className="w-4 h-4 mt-0.5" />
+                        <span><strong>Note:</strong> WhosFree is currently pre-revenue. Are you sure you want to log income?</span>
+                    </div>
+                )}
+
+                {/* Circles Income Logic: Payout Source */}
+                {formData.appSlug === 'circles' && type === 'INCOME' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200 space-y-3">
+                        <div>
+                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Payout Source *</label>
+                            <select
+                                value={formData.payoutSource || ''}
+                                onChange={(e) => {
+                                    setFormData({
+                                        ...formData,
+                                        payoutSource: e.target.value,
+                                        vendor: e.target.value // Auto-fill vendor with source
+                                    });
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
+                                style={{ borderRadius: '0.25rem' }}
+                                required
+                            >
+                                <option value="">Select source...</option>
+                                <option value="Stripe Connect">Stripe Connect</option>
+                                <option value="PayPal">PayPal</option>
+                                <option value="Apple App Store">Apple App Store</option>
+                                <option value="Google Play Store">Google Play Store</option>
+                            </select>
+                        </div>
+                        <p className="text-xs text-gray-500 font-sans italic">
+                            Log the net payout amount that hit your bank account.
+                        </p>
+                    </div>
+                )}
             </div>
         );
     }

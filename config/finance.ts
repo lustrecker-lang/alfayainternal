@@ -61,6 +61,14 @@ export const EXPENSE_CATEGORY_GROUPS = {
         'Client Entertainment',
         'Gifts for Clients',
     ],
+    'Technology & Development': [
+        'Server Costs (AWS/Azure)',
+        'App Store Fees',
+        'User Acquisition (Ads)',
+        'Development Costs',
+        'SaaS Subscriptions (Tech)',
+        'Domain Names & DNS',
+    ],
     'Operations & Internal': [
         'Staff Salaries (Internal Team)',
         'End of Service Gratuity',
@@ -118,6 +126,7 @@ export const INCOME_CATEGORY_GROUPS = {
         'Revenue - Product',
         'Revenue - Seminar',
         'Revenue - Subscription',
+        'Revenue - Marketplace Payout',
         'Revenue - Other',
     ],
 } as const;

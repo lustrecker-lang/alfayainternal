@@ -31,7 +31,9 @@ export interface IMEDAMetadata {
 
 // AFTECH: App/product context
 export interface AFTechMetadata {
-    app_slug: string; // "circles" | "whosfree"
+    app_id: string; // "circles" | "whosfree" | "general"
+    source?: string; // "stripe", "paypal", "apple", "google"
+    is_payout?: boolean;
     server_region?: string;
 }
 
@@ -98,7 +100,8 @@ export interface TransactionFormData {
     isOperational?: boolean;
     seminarId?: string;
     studentPax?: number;
-    appSlug?: string;
+    appSlug?: string; // Mapped to app_id
+    payoutSource?: string; // For Circles Income
     serverRegion?: string;
 }
 
@@ -111,6 +114,7 @@ export const TRANSACTION_CATEGORIES = {
         'Revenue - Seminar',
         'Revenue - Consulting',
         'Revenue - Subscription',
+        'Revenue - Marketplace Payout',
         'Revenue - Other',
     ],
     EXPENSE: [
@@ -124,6 +128,10 @@ export const TRANSACTION_CATEGORIES = {
         'Utilities',
         'Salaries & Wages',
         'Infrastructure',
+        'Server Costs (AWS/Azure)',
+        'App Store Fees',
+        'User Acquisition (Ads)',
+        'Development Costs',
         'Other',
     ],
 };
@@ -173,13 +181,13 @@ export function isIMEDAMetadata(metadata: TransactionMetadata | undefined): meta
 }
 
 export function isAFTechMetadata(metadata: TransactionMetadata | undefined): metadata is AFTechMetadata {
-    return !!metadata && 'app_slug' in metadata;
+    return !!metadata && 'app_id' in metadata;
 }
 
 // === METADATA BUILDER HELPERS ===
 
 export function buildMetadata(formData: TransactionFormData): TransactionMetadata | undefined {
-    const { unitId, type, clientId, projectId, invoiceReference, isBillable, isOperational, seminarId, studentPax, appSlug, serverRegion } = formData;
+    const { unitId, type, clientId, projectId, invoiceReference, isBillable, isOperational, seminarId, studentPax, appSlug, payoutSource, serverRegion } = formData;
 
     // AFCONSULT
     if (unitId === 'afconsult') {
@@ -218,10 +226,18 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
     // AFTECH
     if (unitId === 'aftech') {
         if (appSlug) {
-            return {
-                app_slug: appSlug,
+            const metadata: AFTechMetadata = {
+                app_id: appSlug, // Mapped from form state
                 server_region: serverRegion || undefined,
-            } as AFTechMetadata;
+            };
+
+            // Circles Income Specifics
+            if (appSlug === 'circles' && type === 'INCOME' && payoutSource) {
+                metadata.source = payoutSource;
+                metadata.is_payout = true;
+            }
+
+            return metadata;
         }
         return undefined;
     }
