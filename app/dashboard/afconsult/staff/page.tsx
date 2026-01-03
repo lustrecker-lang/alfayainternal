@@ -4,9 +4,9 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 const STAFF = [
-    { id: 1, name: 'Consultant A', rate: 250, expertise: 'Strategy & Operations', availability: 'Available' },
-    { id: 2, name: 'Consultant B', rate: 300, expertise: 'Digital Transformation', availability: 'On Project' },
-    { id: 3, name: 'Consultant C', rate: 280, expertise: 'Financial Advisory', availability: 'Available' },
+    { id: 1, name: 'Consultant A', rate: 250, expertise: 'Strategy & Operations' },
+    { id: 2, name: 'Consultant B', rate: 300, expertise: 'Digital Transformation' },
+    { id: 3, name: 'Consultant C', rate: 280, expertise: 'Financial Advisory' },
 ];
 
 export default function StaffPage() {
@@ -29,7 +29,6 @@ export default function StaffPage() {
                             <th className="px-6 py-4 text-xs font-normal uppercase tracking-wider text-gray-500 dark:text-gray-400 font-sans">Name</th>
                             <th className="px-6 py-4 text-xs font-normal uppercase tracking-wider text-gray-500 dark:text-gray-400 font-sans">Rate/Hour</th>
                             <th className="px-6 py-4 text-xs font-normal uppercase tracking-wider text-gray-500 dark:text-gray-400 font-sans">Expertise</th>
-                            <th className="px-6 py-4 text-xs font-normal uppercase tracking-wider text-gray-500 dark:text-gray-400 font-sans">Availability</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -37,14 +36,15 @@ export default function StaffPage() {
                             <tr
                                 key={consultant.id}
                                 className="hover:bg-gray-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+                                onClick={() => window.location.href = `/dashboard/afconsult/staff/${consultant.id}`}
                             >
                                 <td className="px-6 py-4 font-normal text-gray-900 dark:text-white font-sans">{consultant.name}</td>
                                 <td className="px-6 py-4 text-sm font-normal text-gray-600 dark:text-gray-400 font-sans">AED {consultant.rate}</td>
                                 <td className="px-6 py-4 text-sm font-normal text-gray-600 dark:text-gray-400 font-sans">{consultant.expertise}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2 py-1 text-xs font-normal font-sans ${consultant.availability === 'Available'
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
                                         }`} style={{ borderRadius: '0.25rem' }}>
                                         {consultant.availability}
                                     </span>

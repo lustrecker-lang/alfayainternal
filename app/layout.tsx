@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning className={`${unna.variable} ${inter.variable}`}>
-            <body className="font-sans antialiased">
+            <body className="font-sans antialiased" suppressHydrationWarning>
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
                     {children}
                 </ThemeProvider>

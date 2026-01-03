@@ -9,7 +9,6 @@ export default function NewConsultantPage() {
         name: '',
         rate: '',
         expertise: '',
-        availability: 'Available',
         email: '',
         phone: '',
     });
@@ -71,7 +70,7 @@ export default function NewConsultantPage() {
                                 />
                             </div>
 
-                            <div>
+                            <div className="md:col-span-2">
                                 <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Expertise / Specialization</label>
                                 <input
                                     type="text"
@@ -81,20 +80,6 @@ export default function NewConsultantPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                     style={{ borderRadius: '0.25rem' }}
                                 />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Initial Availability</label>
-                                <select
-                                    value={formData.availability}
-                                    onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                    style={{ borderRadius: '0.25rem' }}
-                                >
-                                    <option value="Available">Available</option>
-                                    <option value="On Project">On Project</option>
-                                    <option value="Unavailable">Unavailable</option>
-                                </select>
                             </div>
                         </div>
 
