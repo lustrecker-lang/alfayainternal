@@ -103,6 +103,26 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                                             style={{ borderRadius: '0.25rem' }}
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Email Address</label>
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            value={formData.phone}
+                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -149,26 +169,13 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                     <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
                         <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Lifecycle Stats</h3>
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Joined Date</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.joinedDate}</p>
-                                </div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Joined Date</p>
+                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">15 Mar 2024</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <DollarSign className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Billed YTD</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED 142,500</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Award className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Expertise Level</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">Senior Partner</p>
-                                </div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Billed YTD</p>
+                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED 142,500</p>
                             </div>
                         </div>
                     </div>

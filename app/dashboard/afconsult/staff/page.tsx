@@ -41,14 +41,6 @@ export default function StaffPage() {
                                 <td className="px-6 py-4 font-normal text-gray-900 dark:text-white font-sans">{consultant.name}</td>
                                 <td className="px-6 py-4 text-sm font-normal text-gray-600 dark:text-gray-400 font-sans">AED {consultant.rate}</td>
                                 <td className="px-6 py-4 text-sm font-normal text-gray-600 dark:text-gray-400 font-sans">{consultant.expertise}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-1 text-xs font-normal font-sans ${consultant.availability === 'Available'
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-                                        }`} style={{ borderRadius: '0.25rem' }}>
-                                        {consultant.availability}
-                                    </span>
-                                </td>
                             </tr>
                         ))}
                     </tbody>
