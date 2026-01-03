@@ -124,12 +124,12 @@ export default function FinancePage() {
                                             <ArrowDownLeft className="w-5 h-5 text-red-600" />
                                         )}
                                         <div>
-                                            <p className="font-normal text-gray-900 dark:text-white font-sans">{inv.number}</p>
+                                            <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{inv.number}</p>
                                             <p className="text-xs text-gray-500 font-sans">{inv.client} • {inv.date}</p>
                                         </div>
                                     </div>
                                     <div className="text-right flex items-center gap-4">
-                                        <p className="font-normal text-gray-900 dark:text-white font-sans">AED {inv.amount.toLocaleString()}.00</p>
+                                        <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED {inv.amount.toLocaleString()}.00</p>
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();

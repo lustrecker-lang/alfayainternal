@@ -38,7 +38,7 @@ export default function StaffPage() {
                                 className="hover:bg-gray-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
                                 onClick={() => window.location.href = `/dashboard/afconsult/staff/${consultant.id}`}
                             >
-                                <td className="px-6 py-4 font-normal text-gray-900 dark:text-white font-sans">{consultant.name}</td>
+                                <td className="px-6 py-4 text-sm font-normal text-gray-900 dark:text-white font-sans">{consultant.name}</td>
                                 <td className="px-6 py-4 text-sm font-normal text-gray-600 dark:text-gray-400 font-sans">AED {consultant.rate}</td>
                                 <td className="px-6 py-4 text-sm font-normal text-gray-600 dark:text-gray-400 font-sans">{consultant.expertise}</td>
                             </tr>

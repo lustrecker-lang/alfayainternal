@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Save, Trash2, Mail, Phone, DollarSign, Award, Clock, FileText, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use } from 'react';
 
@@ -16,7 +16,7 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
         email: 'consultant.a@afconsult.com',
         phone: '+971 50 123 4567',
         bio: 'Senior consultant with 10+ years of experience in regional strategy and operational efficiency projects.',
-        joinedDate: '2024-03-15',
+        joinedDate: '15 Mar 2024',
     });
 
     const handleSave = () => {
@@ -171,7 +171,7 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                         <div className="space-y-4">
                             <div>
                                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Joined Date</p>
-                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">15 Mar 2024</p>
+                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.joinedDate}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Billed YTD</p>

@@ -39,7 +39,7 @@ export default function ProjectsPage() {
                                 className="hover:bg-gray-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
                             >
                                 <td className="px-6 py-4">
-                                    <Link href={`/dashboard/afconsult/projects/${project.id}`} className="font-normal text-gray-900 dark:text-white hover:text-afconsult font-sans">
+                                    <Link href={`/dashboard/afconsult/projects/${project.id}`} className="text-sm font-normal text-gray-900 dark:text-white hover:text-afconsult font-sans">
                                         {project.name}
                                     </Link>
                                 </td>
