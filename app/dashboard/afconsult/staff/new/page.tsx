@@ -1,10 +1,15 @@
 'use client';
 
-import { ArrowLeft, Save, Upload, FileText } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createConsultant } from '@/lib/staff';
+import type { NewConsultantData } from '@/types/staff';
 
 export default function NewConsultantPage() {
+    const router = useRouter();
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         rate: '',
@@ -12,16 +17,42 @@ export default function NewConsultantPage() {
         email: '',
         phone: '',
         bio: '',
-        joinedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        joinedDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
     });
 
-    const handleSave = () => {
-        alert('Save functionality - would create new consultant and redirect');
+    const handleSave = async () => {
+        if (!formData.name || !formData.rate) {
+            alert('Name and Rate are required.');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const newConsultant: NewConsultantData = {
+                name: formData.name,
+                rate: Number(formData.rate),
+                expertise: formData.expertise || 'General Consultant',
+                email: formData.email,
+                phone: formData.phone,
+                bio: formData.bio,
+                joinedDate: new Date(formData.joinedDate),
+                unitId: 'afconsult',
+                status: 'active',
+            };
+
+            await createConsultant(newConsultant);
+            router.push('/dashboard/afconsult/staff');
+        } catch (error) {
+            console.error('Error saving consultant:', error);
+            alert('Failed to save consultant. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <div className="space-y-6">
-            {/* Header with Back, Centered Title, and Actions */}
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard/afconsult/staff">
@@ -38,42 +69,51 @@ export default function NewConsultantPage() {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans disabled:opacity-50"
                         style={{ borderRadius: '0.25rem' }}
                     >
-                        <Save className="w-4 h-4" />
-                        Save
+                        {saving ? (
+                            <span>Saving...</span>
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content - Always Editable Form */}
+                {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <form className="space-y-8">
+                        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
                             {/* Professional Info Section */}
                             <div className="space-y-6">
                                 <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Professional Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Full Name</label>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Full Name *</label>
                                         <input
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             placeholder="John Doe"
+                                            required
                                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                             style={{ borderRadius: '0.25rem' }}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Rate per Hour (AED)</label>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Rate per Hour (AED) *</label>
                                         <input
                                             type="number"
                                             value={formData.rate}
                                             onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
                                             placeholder="250"
+                                            required
                                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
                                             style={{ borderRadius: '0.25rem' }}
                                         />
@@ -111,6 +151,16 @@ export default function NewConsultantPage() {
                                             style={{ borderRadius: '0.25rem' }}
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Joined Date</label>
+                                        <input
+                                            type="date"
+                                            value={formData.joinedDate}
+                                            onChange={(e) => setFormData({ ...formData, joinedDate: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -128,37 +178,18 @@ export default function NewConsultantPage() {
                             </div>
                         </form>
                     </div>
-
-                    {/* Contracts & Documents */}
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Contracts & Documents</h3>
-                            <button className="flex items-center gap-2 px-3 py-1.5 border border-afconsult text-afconsult hover:bg-afconsult hover:text-white transition-all text-xs font-medium font-sans" style={{ borderRadius: '0.25rem' }}>
-                                <Upload className="w-3.5 h-3.5" />
-                                Upload Document
-                            </button>
-                        </div>
-                        <div className="text-center py-8 border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-lg">
-                            <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500 font-sans">No documents uploaded yet</p>
-                        </div>
-                    </div>
                 </div>
 
-                {/* Sidebar - Contextual Info */}
+                {/* Sidebar - Helper Info */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Lifecycle Stats</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Joined Date</p>
-                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.joinedDate}</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Billed YTD</p>
-                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED 0</p>
-                            </div>
-                        </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 p-6 border border-blue-100 dark:border-blue-900/30 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                        <h3 className="text-sm font-normal uppercase tracking-wider text-blue-800 dark:text-blue-400 font-sans mb-4">Onboarding Tips</h3>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mb-4 font-sans">
+                            Ensure rates are agreed upon and contract is signed before adding a new consultant.
+                        </p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 font-sans">
+                            Documents can be uploaded after creating the consultant profile.
+                        </p>
                     </div>
                 </div>
             </div>

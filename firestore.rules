@@ -17,6 +17,11 @@ service cloud.firestore {
     match /clients/{client} {
       allow read, write: if true;
     }
+
+    // Staff - Consultants
+    match /staff/{consultant} {
+      allow read, write: if true;
+    }
     
     // Default: deny access to all other collections
     match /{document=**} {

@@ -2,31 +2,93 @@
 
 import { ArrowLeft, Save, Trash2, FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Added useRouter
+import { getConsultant, updateConsultant, deleteConsultant } from '@/lib/staff';
+import type { Consultant } from '@/types/staff';
+import { formatCurrency } from '@/lib/finance'; // Optional: for displaying stats
 
 export default function ConsultantDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const router = useRouter(); // Hook for navigation
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    // Mock consultant data - in real app, fetch based on id
     const [formData, setFormData] = useState({
-        name: 'Consultant A',
-        rate: '250',
-        expertise: 'Strategy & Operations',
-        email: 'consultant.a@afconsult.com',
-        phone: '+971 50 123 4567',
-        bio: 'Senior consultant with 10+ years of experience in regional strategy and operational efficiency projects.',
-        joinedDate: '15 Mar 2024',
+        name: '',
+        rate: '',
+        expertise: '',
+        email: '',
+        phone: '',
+        bio: '',
+        joinedDate: '',
     });
 
-    const handleSave = () => {
-        alert('Save functionality - would update consultant data');
+    useEffect(() => {
+        loadData();
+    }, [id]);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const consultant = await getConsultant(id);
+            if (consultant) {
+                setFormData({
+                    name: consultant.name,
+                    rate: consultant.rate.toString(),
+                    expertise: consultant.expertise,
+                    email: consultant.email || '',
+                    phone: consultant.phone || '',
+                    bio: consultant.bio || '',
+                    joinedDate: new Date(consultant.joinedDate).toISOString().split('T')[0], // To input date format
+                });
+            } else {
+                console.error('Consultant not found');
+                // Maybe redirect or show error
+            }
+        } catch (error) {
+            console.error('Failed to load consultant:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const confirmDelete = () => {
-        alert('Archive functionality - would remove consultant from active directory');
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateConsultant(id, {
+                name: formData.name,
+                rate: Number(formData.rate),
+                expertise: formData.expertise,
+                email: formData.email,
+                phone: formData.phone,
+                bio: formData.bio,
+                joinedDate: new Date(formData.joinedDate),
+            });
+            alert('Consultant updated successfully.');
+        } catch (error) {
+            console.error('Error updating consultant:', error);
+            alert('Failed to update consultant.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await deleteConsultant(id);
+            router.push('/dashboard/afconsult/staff');
+        } catch (error) {
+            console.error('Error archiving consultant:', error);
+            alert('Failed to archive consultant.');
+        }
         setShowDeleteDialog(false);
     };
+
+    if (loading) {
+        return <div className="p-12 text-center text-gray-500 font-sans">Loading consultant details...</div>;
+    }
 
     return (
         <div className="space-y-6">
@@ -55,11 +117,16 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                     </button>
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans disabled:opacity-50"
                         style={{ borderRadius: '0.25rem' }}
                     >
-                        <Save className="w-4 h-4" />
-                        Save
+                        {saving ? 'Saving...' : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
@@ -68,7 +135,7 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                 {/* Main Content - Always Editable Form */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <form className="space-y-8">
+                        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
                             {/* Professional Info Section */}
                             <div className="space-y-6">
                                 <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Professional Information</h3>
@@ -123,6 +190,16 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                                             style={{ borderRadius: '0.25rem' }}
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Joined Date</label>
+                                        <input
+                                            type="date"
+                                            value={formData.joinedDate}
+                                            onChange={(e) => setFormData({ ...formData, joinedDate: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -149,17 +226,10 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                                 Upload Document
                             </button>
                         </div>
-                        <div className="space-y-3">
-                            <div className="p-4 border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 flex items-center justify-between group" style={{ borderRadius: '0.25rem' }}>
-                                <div className="flex items-center gap-3">
-                                    <FileText className="w-5 h-5 text-gray-400" />
-                                    <div>
-                                        <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">Employment Contract</p>
-                                        <p className="text-[10px] text-gray-500 font-sans uppercase tracking-wider">MAR 15, 2024 • 850 KB</p>
-                                    </div>
-                                </div>
-                                <button className="text-xs font-normal text-afconsult hover:underline font-sans uppercase">View</button>
-                            </div>
+                        <div className="text-center py-8 border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-lg">
+                            <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500 font-sans">No documents uploaded yet</p>
+                            <p className="text-xs text-gray-400 mt-1 font-sans">(Feature coming soon)</p>
                         </div>
                     </div>
                 </div>
@@ -171,11 +241,13 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                         <div className="space-y-4">
                             <div>
                                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Joined Date</p>
-                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.joinedDate}</p>
+                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">
+                                    {formData.joinedDate ? new Date(formData.joinedDate).toLocaleDateString('en-GB') : '-'}
+                                </p>
                             </div>
                             <div>
                                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Billed YTD</p>
-                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED 142,500</p>
+                                <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">AED 0</p>
                             </div>
                         </div>
                     </div>
@@ -190,7 +262,7 @@ export default function ConsultantDetailPage({ params }: { params: Promise<{ id:
                         <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
                             <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Archive Consultant?</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
-                                Are you sure you want to archive this consultant? This will remove them from the active list of staff members.
+                                Are you sure you want to archive {formData.name}? This will remove them from the active list of staff members.
                             </p>
                             <div className="flex gap-3">
                                 <button
