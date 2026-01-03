@@ -71,7 +71,8 @@ export default function FinancePage() {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Summary Cards - Only 2 cards now */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
                     <p className="text-xs font-normal text-gray-500 uppercase tracking-widest mb-1 font-sans">Total {view === 'INVOICES' ? 'Invoiced' : 'Expensed'}</p>
                     <p className="text-2xl font-normal text-gray-900 dark:text-white">AED 45,200.00</p>
@@ -79,14 +80,6 @@ export default function FinancePage() {
                 <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
                     <p className="text-xs font-normal text-gray-500 uppercase tracking-widest mb-1 font-sans">Past 30 Days</p>
                     <p className="text-2xl font-normal text-green-600">+AED 12,000.00</p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                    <p className="text-xs font-normal text-gray-500 uppercase tracking-widest mb-1 font-sans">Pending Approval</p>
-                    <p className="text-2xl font-normal text-afconsult">AED 3,400.00</p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                    <p className="text-xs font-normal text-gray-500 uppercase tracking-widest mb-1 font-sans">Status</p>
-                    <p className="text-2xl font-normal text-blue-600">On Track</p>
                 </div>
             </div>
 
@@ -99,9 +92,12 @@ export default function FinancePage() {
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-700/30 transition-colors">
                             <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${view === 'INVOICES' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                    {view === 'INVOICES' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                                </div>
+                                {/* Arrow icons without circular background */}
+                                {view === 'INVOICES' ? (
+                                    <ArrowUpRight className="w-5 h-5 text-green-600" />
+                                ) : (
+                                    <ArrowDownLeft className="w-5 h-5 text-red-600" />
+                                )}
                                 <div>
                                     <p className="font-normal text-gray-900 dark:text-white font-sans">
                                         {view === 'INVOICES' ? `Invoice #2026-00${i}` : `Expense Reimb. #${i}`}
