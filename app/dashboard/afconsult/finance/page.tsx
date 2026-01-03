@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, FileDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FinancePage() {
@@ -106,9 +106,19 @@ export default function FinancePage() {
                                         <p className="text-xs text-gray-500 font-sans">Global Industries • Jan 02, 2026</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex items-center gap-4">
                                     <p className="font-normal text-gray-900 dark:text-white font-sans">AED 5,000.00</p>
-                                    <button className="text-[10px] font-normal text-afconsult uppercase hover:underline font-sans">View Details</button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            alert('PDF generation - would open PDF page');
+                                        }}
+                                        className="flex items-center gap-1 text-[10px] font-normal text-afconsult uppercase hover:underline font-sans"
+                                    >
+                                        <FileDown className="w-3 h-3" />
+                                        PDF
+                                    </button>
                                 </div>
                             </div>
                         </Link>

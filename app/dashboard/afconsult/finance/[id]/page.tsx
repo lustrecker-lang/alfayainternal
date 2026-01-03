@@ -203,7 +203,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <div className="space-y-3">
                             {lineItems.map((item, index) => (
                                 <div key={item.id} className="border border-gray-200 dark:border-gray-700 p-4" style={{ borderRadius: '0.25rem' }}>
-                                    <div className="grid grid-cols-12 gap-3 items-start">
+                                    <div className="grid grid-cols-12 gap-3 items-end">
                                         <div className="col-span-3">
                                             <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Item Name</label>
                                             <input
