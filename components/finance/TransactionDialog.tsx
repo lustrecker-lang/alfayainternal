@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { X, Upload, DollarSign, FileText } from 'lucide-react';
-import { saveTransaction } from '@/lib/finance';
-import { TRANSACTION_CATEGORIES, SUPPORTED_CURRENCIES, buildMetadata } from '@/types/finance';
+import { useState, useEffect, FormEvent, useMemo } from 'react';
+import { X, Upload, DollarSign, FileText, ChevronDown } from 'lucide-react';
+import { saveTransaction, getUniqueVendors } from '@/lib/finance';
+import { buildMetadata } from '@/types/finance';
 import type { TransactionFormData } from '@/types/finance';
+import { GLOBAL_CATEGORIES, SUPPORTED_CURRENCIES, VAT_RATES, calculateVATFromGross, calculateExchangeRate } from '@/config/finance';
 
 // Mock data sources - will be replaced with Firestore fetches later
 const AFCONSULT_CLIENTS = [
@@ -42,11 +43,14 @@ export default function TransactionDialog({
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [vendors, setVendors] = useState<string[]>([]);
+    const [showVendorSuggestions, setShowVendorSuggestions] = useState(false);
 
+    // Form state - now uses "Total Amount" (gross) as the primary input
     const [formData, setFormData] = useState<TransactionFormData>({
         date: new Date().toISOString().split('T')[0],
         vendor: '',
-        amount: 0,
+        amount: 0, // This is now the TOTAL (gross) amount from bank
         currency: 'AED',
         vatRate: 5,
         type: 'EXPENSE',
@@ -63,7 +67,35 @@ export default function TransactionDialog({
         appSlug: defaultSubProject || '',
     });
 
+    // Bank statement workflow: whether VAT is included in total
+    const [vatIncluded, setVatIncluded] = useState(true);
+
+    // Foreign currency: user enters foreign amount + AED deducted
+    const [foreignAmount, setForeignAmount] = useState(0);
+
     const [proofFile, setProofFile] = useState<File | null>(null);
+
+    // Load unique vendors for autocomplete
+    useEffect(() => {
+        async function loadVendors() {
+            try {
+                const uniqueVendors = await getUniqueVendors();
+                setVendors(uniqueVendors);
+            } catch (err) {
+                console.error('Failed to load vendors:', err);
+            }
+        }
+        if (isOpen) {
+            loadVendors();
+        }
+    }, [isOpen]);
+
+    // Filter vendors for autocomplete
+    const filteredVendors = useMemo(() => {
+        if (!formData.vendor) return vendors.slice(0, 5);
+        const lower = formData.vendor.toLowerCase();
+        return vendors.filter(v => v.toLowerCase().includes(lower)).slice(0, 5);
+    }, [formData.vendor, vendors]);
 
     const resetForm = () => {
         setFormData({
@@ -84,9 +116,25 @@ export default function TransactionDialog({
             seminarId: '',
             appSlug: defaultSubProject || '',
         });
+        setVatIncluded(true);
+        setForeignAmount(0);
         setProofFile(null);
         setError(null);
+        setShowVendorSuggestions(false);
     };
+
+    // Calculate VAT breakdown from gross amount (backwards calculation)
+    const vatBreakdown = useMemo(() => {
+        return calculateVATFromGross(formData.amount, formData.vatRate, vatIncluded);
+    }, [formData.amount, formData.vatRate, vatIncluded]);
+
+    // Calculate implied exchange rate for foreign currencies
+    const impliedExchangeRate = useMemo(() => {
+        if (formData.currency === 'AED' || foreignAmount <= 0 || formData.amount <= 0) {
+            return 0;
+        }
+        return calculateExchangeRate(foreignAmount, formData.amount);
+    }, [foreignAmount, formData.amount, formData.currency]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -96,11 +144,11 @@ export default function TransactionDialog({
         try {
             // Validation
             if (!formData.unitId) throw new Error('Business unit is required');
-            if (formData.amount <= 0) throw new Error('Amount must be greater than 0');
+            if (formData.amount <= 0) throw new Error('Total amount is required');
             if (!formData.category) throw new Error('Category is required');
             if (!formData.vendor) throw new Error('Vendor is required');
-            if (formData.currency !== 'AED' && !formData.exchangeRate) {
-                throw new Error('Exchange rate is required for non-AED currencies');
+            if (formData.currency !== 'AED' && foreignAmount <= 0) {
+                throw new Error('Foreign amount is required');
             }
 
             // AFCONSULT-specific validation
@@ -116,13 +164,23 @@ export default function TransactionDialog({
             // Build metadata
             const metadata = buildMetadata(formData);
 
-            // Prepare data for save
+            // Prepare data for save - override with calculated values
             const data: TransactionFormData = {
                 ...formData,
+                // The formData.amount is the TOTAL (gross) from bank
+                // We need to pass the calculated values to the save function
+                exchangeRate: formData.currency !== 'AED' ? impliedExchangeRate : undefined,
                 proofFile: proofFile || undefined,
             };
 
-            await saveTransaction(data, metadata);
+            // Pass vatIncluded flag and VAT breakdown for proper saving
+            await saveTransaction(data, metadata, {
+                vatIncluded,
+                netAmount: vatBreakdown.netAmount,
+                vatAmount: vatBreakdown.vatAmount,
+                totalAmount: vatBreakdown.totalAmount,
+                foreignAmount: formData.currency !== 'AED' ? foreignAmount : undefined,
+            });
 
             resetForm();
             setIsOpen(false);
@@ -140,17 +198,9 @@ export default function TransactionDialog({
         }
     };
 
-    const calculateVAT = () => {
-        const vatAmount = formData.amount * (formData.vatRate / 100);
-        const total = formData.amount + vatAmount;
-        return { vatAmount, total };
-    };
-
     const categories = formData.type === 'INCOME'
-        ? TRANSACTION_CATEGORIES.INCOME
-        : TRANSACTION_CATEGORIES.EXPENSE;
-
-    const { vatAmount, total } = calculateVAT();
+        ? GLOBAL_CATEGORIES.INCOME
+        : GLOBAL_CATEGORIES.EXPENSE;
 
     // Filter projects by selected client
     const filteredProjects = AFCONSULT_PROJECTS.filter(
@@ -216,11 +266,11 @@ export default function TransactionDialog({
                             </div>
 
                             {/* ============================================ */}
-                            {/* SECTION A: Universal Fields                  */}
+                            {/* SECTION A: Bank Statement Fields             */}
                             {/* ============================================ */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-normal uppercase tracking-wider text-gray-500 font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">
-                                    Transaction Details
+                                    Bank Statement Details
                                 </h3>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -237,35 +287,44 @@ export default function TransactionDialog({
                                         />
                                     </div>
 
-                                    {/* Vendor */}
-                                    <div>
+                                    {/* Vendor with Autocomplete */}
+                                    <div className="relative">
                                         <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
                                             {formData.type === 'INCOME' ? 'Received From *' : 'Vendor / Supplier *'}
                                         </label>
                                         <input
                                             type="text"
                                             value={formData.vendor}
-                                            onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, vendor: e.target.value });
+                                                setShowVendorSuggestions(true);
+                                            }}
+                                            onFocus={() => setShowVendorSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowVendorSuggestions(false), 200)}
                                             placeholder={formData.type === 'INCOME' ? 'e.g. Client Name' : 'e.g. Emirates Airlines'}
                                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
                                             style={{ borderRadius: '0.25rem' }}
                                             required
+                                            autoComplete="off"
                                         />
-                                    </div>
-
-                                    {/* Amount */}
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Amount (excl. VAT) *</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={formData.amount || ''}
-                                            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                            style={{ borderRadius: '0.25rem' }}
-                                            required
-                                        />
+                                        {/* Autocomplete Dropdown */}
+                                        {showVendorSuggestions && filteredVendors.length > 0 && (
+                                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 shadow-lg max-h-40 overflow-y-auto" style={{ borderRadius: '0.25rem' }}>
+                                                {filteredVendors.map((vendor, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData({ ...formData, vendor });
+                                                            setShowVendorSuggestions(false);
+                                                        }}
+                                                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-900 dark:text-white font-sans"
+                                                    >
+                                                        {vendor}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Currency */}
@@ -273,45 +332,19 @@ export default function TransactionDialog({
                                         <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Currency *</label>
                                         <select
                                             value={formData.currency}
-                                            onChange={(e) => setFormData({ ...formData, currency: e.target.value as any, exchangeRate: undefined })}
+                                            onChange={(e) => {
+                                                const newCurrency = e.target.value as any;
+                                                setFormData({ ...formData, currency: newCurrency });
+                                                if (newCurrency === 'AED') {
+                                                    setForeignAmount(0);
+                                                }
+                                            }}
                                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
                                             style={{ borderRadius: '0.25rem' }}
                                         >
                                             {SUPPORTED_CURRENCIES.map(c => (
                                                 <option key={c} value={c}>{c}</option>
                                             ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Exchange Rate (if non-AED) */}
-                                    {formData.currency !== 'AED' && (
-                                        <div>
-                                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Exchange Rate to AED *</label>
-                                            <input
-                                                type="number"
-                                                step="0.0001"
-                                                min="0"
-                                                value={formData.exchangeRate || ''}
-                                                onChange={(e) => setFormData({ ...formData, exchangeRate: parseFloat(e.target.value) || 0 })}
-                                                placeholder="e.g., 3.67 for USD"
-                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                                style={{ borderRadius: '0.25rem' }}
-                                                required
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* VAT Rate */}
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">VAT Rate</label>
-                                        <select
-                                            value={formData.vatRate}
-                                            onChange={(e) => setFormData({ ...formData, vatRate: parseInt(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        >
-                                            <option value={0}>0% (Exempt)</option>
-                                            <option value={5}>5% (Standard)</option>
                                         </select>
                                     </div>
 
@@ -328,6 +361,69 @@ export default function TransactionDialog({
                                             <option value="">Select category...</option>
                                             {categories.map((cat) => (
                                                 <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Foreign Amount (if non-AED) */}
+                                    {formData.currency !== 'AED' && (
+                                        <div>
+                                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
+                                                Foreign Amount ({formData.currency}) *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={foreignAmount || ''}
+                                                onChange={(e) => setForeignAmount(parseFloat(e.target.value) || 0)}
+                                                placeholder={`e.g., 100 ${formData.currency}`}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
+                                                style={{ borderRadius: '0.25rem' }}
+                                                required
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Total Amount (from Bank) - Always AED */}
+                                    <div className={formData.currency !== 'AED' ? '' : 'col-span-2'}>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
+                                            {formData.currency !== 'AED' ? 'AED Deducted (from Bank) *' : 'Total Amount (from Bank) *'}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={formData.amount || ''}
+                                            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                                            placeholder="e.g., 425.00"
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
+                                            style={{ borderRadius: '0.25rem' }}
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* VAT Included Toggle + Rate */}
+                                    <div className="col-span-2 flex items-center gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={vatIncluded}
+                                                onChange={(e) => setVatIncluded(e.target.checked)}
+                                                className="w-4 h-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                                            />
+                                            <span className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">
+                                                VAT included in total
+                                            </span>
+                                        </label>
+                                        <select
+                                            value={formData.vatRate}
+                                            onChange={(e) => setFormData({ ...formData, vatRate: parseInt(e.target.value) })}
+                                            className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none text-sm font-sans"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        >
+                                            {VAT_RATES.map(rate => (
+                                                <option key={rate.value} value={rate.value}>{rate.label}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -383,20 +479,30 @@ export default function TransactionDialog({
                             {/* ============================================ */}
                             {renderSectionB(formData, setFormData, filteredProjects)}
 
-                            {/* Summary */}
+                            {/* Summary Box (Read-only breakdown) */}
                             <div className="bg-gray-50 dark:bg-zinc-800 p-4 space-y-2" style={{ borderRadius: '0.25rem' }}>
+                                <h4 className="text-xs font-normal uppercase tracking-wider text-gray-500 font-sans mb-3">Calculated Breakdown</h4>
+
+                                {/* Show exchange rate if foreign currency */}
+                                {formData.currency !== 'AED' && impliedExchangeRate > 0 && (
+                                    <div className="flex justify-between text-sm font-sans">
+                                        <span className="text-gray-500">Exchange Rate</span>
+                                        <span className="text-gray-900 dark:text-white">1 {formData.currency} = {impliedExchangeRate.toFixed(4)} AED</span>
+                                    </div>
+                                )}
+
                                 <div className="flex justify-between text-sm font-sans">
-                                    <span className="text-gray-500">Subtotal</span>
-                                    <span className="text-gray-900 dark:text-white">{formData.currency} {formData.amount.toFixed(2)}</span>
+                                    <span className="text-gray-500">Net Amount</span>
+                                    <span className="text-gray-900 dark:text-white">AED {vatBreakdown.netAmount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-sans">
                                     <span className="text-gray-500">VAT ({formData.vatRate}%)</span>
-                                    <span className="text-gray-900 dark:text-white">{formData.currency} {vatAmount.toFixed(2)}</span>
+                                    <span className="text-gray-900 dark:text-white">AED {vatBreakdown.vatAmount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-sans font-medium border-t border-gray-200 dark:border-gray-700 pt-2">
-                                    <span className="text-gray-700 dark:text-gray-300">Total</span>
+                                    <span className="text-gray-700 dark:text-gray-300">Total (Bank)</span>
                                     <span className={formData.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}>
-                                        {formData.currency} {total.toFixed(2)}
+                                        AED {vatBreakdown.totalAmount.toFixed(2)}
                                     </span>
                                 </div>
                             </div>

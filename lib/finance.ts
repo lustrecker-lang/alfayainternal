@@ -12,11 +12,24 @@ import { db, storage } from './firebase';
 import type { Transaction, TransactionFormData, FinancialSummary, TransactionMetadata } from '@/types/finance';
 
 /**
+ * Bank statement calculation context
+ */
+interface BankStatementContext {
+    vatIncluded: boolean;
+    netAmount: number;
+    vatAmount: number;
+    totalAmount: number;
+    foreignAmount?: number;
+}
+
+/**
  * Save a new transaction to Firestore with polymorphic metadata
+ * Now supports bank statement workflow with pre-calculated VAT breakdown
  */
 export async function saveTransaction(
     data: TransactionFormData,
-    metadata?: TransactionMetadata
+    metadata?: TransactionMetadata,
+    bankContext?: BankStatementContext
 ): Promise<string> {
     try {
         let proofUrl: string | undefined;
@@ -31,9 +44,22 @@ export async function saveTransaction(
             proofUrl = await getDownloadURL(storageRef);
         }
 
-        // Calculate VAT and totals
-        const vatAmount = data.amount * (data.vatRate / 100);
-        const totalAmount = data.amount + vatAmount;
+        // Use pre-calculated values from bank statement flow, or calculate if not provided
+        let netAmount: number;
+        let vatAmount: number;
+        let totalAmount: number;
+
+        if (bankContext) {
+            // Bank statement flow: values already calculated
+            netAmount = bankContext.netAmount;
+            vatAmount = bankContext.vatAmount;
+            totalAmount = bankContext.totalAmount;
+        } else {
+            // Legacy flow: calculate from net amount
+            vatAmount = data.amount * (data.vatRate / 100);
+            netAmount = data.amount;
+            totalAmount = data.amount + vatAmount;
+        }
 
         // Calculate amount in AED (normalized)
         const exchangeRate = data.exchangeRate || 1;
@@ -46,7 +72,7 @@ export async function saveTransaction(
             // Core fields (The "Envelope")
             date: Timestamp.fromDate(new Date(data.date)),
             vendor: data.vendor,
-            amount: data.amount,
+            amount: netAmount,
             currency: data.currency,
             vatRate: data.vatRate,
             vatAmount: vatAmount,
@@ -62,6 +88,10 @@ export async function saveTransaction(
         // Add optional core fields
         if (data.exchangeRate && data.currency !== 'AED') {
             transaction.exchangeRate = data.exchangeRate;
+        }
+        if (bankContext?.foreignAmount && data.currency !== 'AED') {
+            transaction.foreignAmount = bankContext.foreignAmount;
+            transaction.foreignCurrency = data.currency;
         }
         if (data.description) {
             transaction.description = data.description;
@@ -80,6 +110,28 @@ export async function saveTransaction(
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
+    }
+}
+
+/**
+ * Get unique vendor names from all transactions for autocomplete
+ */
+export async function getUniqueVendors(): Promise<string[]> {
+    try {
+        const snapshot = await getDocs(collection(db, 'general_ledger'));
+        const vendors = new Set<string>();
+
+        snapshot.docs.forEach(doc => {
+            const vendor = doc.data().vendor;
+            if (vendor && typeof vendor === 'string') {
+                vendors.add(vendor);
+            }
+        });
+
+        return Array.from(vendors).sort();
+    } catch (error) {
+        console.error('Error fetching vendors:', error);
+        return [];
     }
 }
 
