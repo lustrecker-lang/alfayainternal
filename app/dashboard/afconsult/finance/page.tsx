@@ -65,8 +65,8 @@ export default function FinancePage() {
                 <button
                     onClick={() => setView('INVOICES')}
                     className={`flex-1 py-2 text-sm font-normal font-sans transition-all ${view === 'INVOICES'
-                            ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                     style={{ borderRadius: '0.25rem' }}
                 >
@@ -75,8 +75,8 @@ export default function FinancePage() {
                 <button
                     onClick={() => setView('EXPENSES')}
                     className={`flex-1 py-2 text-sm font-normal font-sans transition-all ${view === 'EXPENSES'
-                            ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-white dark:bg-zinc-700 text-afconsult shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                     style={{ borderRadius: '0.25rem' }}
                 >
@@ -100,7 +100,7 @@ export default function FinancePage() {
             <div className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm" style={{ borderRadius: '0.5rem' }}>
                 {/* Search Bar */}
                 <div className="px-6 py-4 bg-gray-50/50 dark:bg-zinc-900/50 border-b border-gray-100 dark:border-zinc-800">
-                    <div className="relative">
+                    <div className="relative max-w-sm">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
