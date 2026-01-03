@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, ArrowUpRight, ArrowDownLeft, FileDown, Search } from 'lucide-react';
 import Link from 'next/link';
 import TransactionDialog from '@/components/finance/TransactionDialog';
+import TransactionDetailDialog from '@/components/finance/TransactionDetailDialog';
 import { getTransactions, formatCurrency } from '@/lib/finance';
 import type { Transaction } from '@/types/finance';
 
@@ -12,6 +13,7 @@ export default function FinancePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
     const loadTransactions = async () => {
         setLoading(true);
@@ -139,7 +141,8 @@ export default function FinancePage() {
                         filteredTransactions.map((t) => (
                             <div
                                 key={t.id}
-                                className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-700/30 transition-colors"
+                                onClick={() => setSelectedTransaction(t)}
+                                className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-700/30 transition-colors cursor-pointer"
                             >
                                 <div className="flex items-center gap-4">
                                     {t.type === 'INCOME' ? (
@@ -185,6 +188,15 @@ export default function FinancePage() {
                     )}
                 </div>
             </div>
+
+            {/* Transaction Detail Dialog */}
+            <TransactionDetailDialog
+                transaction={selectedTransaction}
+                isOpen={!!selectedTransaction}
+                onClose={() => setSelectedTransaction(null)}
+                onUpdate={loadTransactions}
+                brandColor="afconsult"
+            />
         </div>
     );
 }

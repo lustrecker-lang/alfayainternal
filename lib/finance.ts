@@ -1,6 +1,10 @@
 import {
     collection,
     addDoc,
+    doc,
+    getDoc,
+    updateDoc,
+    deleteDoc,
     query,
     where,
     getDocs,
@@ -110,6 +114,89 @@ export async function saveTransaction(
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
+    }
+}
+
+/**
+ * Update an existing transaction
+ */
+export async function updateTransaction(
+    id: string,
+    updates: Partial<Transaction>,
+    metadata?: TransactionMetadata
+): Promise<void> {
+    try {
+        const docRef = doc(db, 'general_ledger', id);
+
+        const updateData: Record<string, any> = {
+            ...updates,
+            updatedAt: Timestamp.now(),
+        };
+
+        // Convert date if provided
+        if (updates.date) {
+            updateData.date = Timestamp.fromDate(
+                updates.date instanceof Date ? updates.date : new Date(updates.date)
+            );
+        }
+
+        // Remove fields that shouldn't be directly updated
+        delete updateData.id;
+        delete updateData.createdAt;
+
+        // Add metadata if provided
+        if (metadata && Object.keys(metadata).length > 0) {
+            updateData.metadata = metadata;
+        }
+
+        await updateDoc(docRef, updateData);
+    } catch (error) {
+        console.error('Error updating transaction:', error);
+        throw new Error('Failed to update transaction');
+    }
+}
+
+/**
+ * Delete a transaction
+ */
+export async function deleteTransaction(id: string): Promise<void> {
+    try {
+        const docRef = doc(db, 'general_ledger', id);
+        await deleteDoc(docRef);
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        throw new Error('Failed to delete transaction');
+    }
+}
+
+/**
+ * Get a single transaction by ID
+ */
+export async function getTransactionById(id: string): Promise<Transaction | null> {
+    try {
+        const docRef = doc(db, 'general_ledger', id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            return null;
+        }
+
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            ...data,
+            date: data.date?.toDate?.() || data.createdAt?.toDate?.() || new Date(),
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            updatedAt: data.updatedAt?.toDate?.() || new Date(),
+            vatRate: data.vatRate || 0,
+            vatAmount: data.vatAmount || 0,
+            totalAmount: data.totalAmount || data.amountInAED || data.amount || 0,
+            vendor: data.vendor || '',
+            metadata: data.metadata,
+        } as Transaction;
+    } catch (error) {
+        console.error('Error fetching transaction:', error);
+        return null;
     }
 }
 
