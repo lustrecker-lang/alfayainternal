@@ -2,10 +2,12 @@
 
 import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { X, Upload, DollarSign, FileText, ChevronDown } from 'lucide-react';
-import { saveTransaction, getUniqueVendors } from '@/lib/finance';
+import { saveTransaction } from '@/lib/finance';
 import { buildMetadata } from '@/types/finance';
 import type { TransactionFormData } from '@/types/finance';
-import { GLOBAL_CATEGORIES, SUPPORTED_CURRENCIES, VAT_RATES, calculateVATFromGross, calculateExchangeRate } from '@/config/finance';
+import { SUPPORTED_CURRENCIES, VAT_RATES, calculateVATFromGross, calculateExchangeRate } from '@/config/finance';
+import VendorCombobox from './VendorCombobox';
+import CategorySelect from './CategorySelect';
 
 // Mock data sources - will be replaced with Firestore fetches later
 const AFCONSULT_CLIENTS = [
@@ -43,8 +45,6 @@ export default function TransactionDialog({
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [vendors, setVendors] = useState<string[]>([]);
-    const [showVendorSuggestions, setShowVendorSuggestions] = useState(false);
 
     // Form state - now uses "Total Amount" (gross) as the primary input
     const [formData, setFormData] = useState<TransactionFormData>({
@@ -75,27 +75,7 @@ export default function TransactionDialog({
 
     const [proofFile, setProofFile] = useState<File | null>(null);
 
-    // Load unique vendors for autocomplete
-    useEffect(() => {
-        async function loadVendors() {
-            try {
-                const uniqueVendors = await getUniqueVendors();
-                setVendors(uniqueVendors);
-            } catch (err) {
-                console.error('Failed to load vendors:', err);
-            }
-        }
-        if (isOpen) {
-            loadVendors();
-        }
-    }, [isOpen]);
 
-    // Filter vendors for autocomplete
-    const filteredVendors = useMemo(() => {
-        if (!formData.vendor) return vendors.slice(0, 5);
-        const lower = formData.vendor.toLowerCase();
-        return vendors.filter(v => v.toLowerCase().includes(lower)).slice(0, 5);
-    }, [formData.vendor, vendors]);
 
     const resetForm = () => {
         setFormData({
@@ -120,7 +100,6 @@ export default function TransactionDialog({
         setForeignAmount(0);
         setProofFile(null);
         setError(null);
-        setShowVendorSuggestions(false);
     };
 
     // Calculate VAT breakdown from gross amount (backwards calculation)
@@ -197,10 +176,6 @@ export default function TransactionDialog({
             setProofFile(e.target.files[0]);
         }
     };
-
-    const categories = formData.type === 'INCOME'
-        ? GLOBAL_CATEGORIES.INCOME
-        : GLOBAL_CATEGORIES.EXPENSE;
 
     // Filter projects by selected client
     const filteredProjects = AFCONSULT_PROJECTS.filter(
@@ -287,44 +262,16 @@ export default function TransactionDialog({
                                         />
                                     </div>
 
-                                    {/* Vendor with Autocomplete */}
-                                    <div className="relative">
+                                    {/* Vendor with Combobox */}
+                                    <div>
                                         <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
                                             {formData.type === 'INCOME' ? 'Received From *' : 'Vendor / Supplier *'}
                                         </label>
-                                        <input
-                                            type="text"
+                                        <VendorCombobox
                                             value={formData.vendor}
-                                            onChange={(e) => {
-                                                setFormData({ ...formData, vendor: e.target.value });
-                                                setShowVendorSuggestions(true);
-                                            }}
-                                            onFocus={() => setShowVendorSuggestions(true)}
-                                            onBlur={() => setTimeout(() => setShowVendorSuggestions(false), 200)}
+                                            onChange={(value) => setFormData({ ...formData, vendor: value })}
                                             placeholder={formData.type === 'INCOME' ? 'e.g. Client Name' : 'e.g. Emirates Airlines'}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                            style={{ borderRadius: '0.25rem' }}
-                                            required
-                                            autoComplete="off"
                                         />
-                                        {/* Autocomplete Dropdown */}
-                                        {showVendorSuggestions && filteredVendors.length > 0 && (
-                                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 shadow-lg max-h-40 overflow-y-auto" style={{ borderRadius: '0.25rem' }}>
-                                                {filteredVendors.map((vendor, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFormData({ ...formData, vendor });
-                                                            setShowVendorSuggestions(false);
-                                                        }}
-                                                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-900 dark:text-white font-sans"
-                                                    >
-                                                        {vendor}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* Currency */}
@@ -351,18 +298,11 @@ export default function TransactionDialog({
                                     {/* Category */}
                                     <div>
                                         <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Category *</label>
-                                        <select
+                                        <CategorySelect
                                             value={formData.category}
-                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 outline-none font-sans"
-                                            style={{ borderRadius: '0.25rem' }}
-                                            required
-                                        >
-                                            <option value="">Select category...</option>
-                                            {categories.map((cat) => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(value) => setFormData({ ...formData, category: value })}
+                                            type={formData.type}
+                                        />
                                     </div>
 
                                     {/* Foreign Amount (if non-AED) */}

@@ -3,27 +3,116 @@
 // ============================================================
 
 /**
- * Global expense/income categories
+ * Global expense categories organized by group
  * Used across all business units for consistent reporting
  */
-export const GLOBAL_CATEGORIES = {
-    EXPENSE: [
-        'Marketing',
-        'Software & Subscriptions',
-        'Travel & Transport',
-        'Accommodation',
-        'Rent',
-        'Legal & Professional',
-        'Salaries & Wages',
-        'Office Supplies',
-        'Bank Fees',
-        'Utilities',
-        'Meals & Entertainment',
-        'Insurance',
-        'Training & Education',
-        'Other',
+export const EXPENSE_CATEGORY_GROUPS = {
+    'Consultancy & Professional Services': [
+        'Professional Indemnity Insurance',
+        'Subcontractor / Associate Fees',
+        'Client Acquisition & Proposal Costs',
+        'Research & Data Subscriptions',
+        'Software – Specialized (e.g., AutoCAD, SPSS)',
+        'Intellectual Property (IP) Costs',
+        'Referral Fees',
     ],
-    INCOME: [
+    'Training & Educational': [
+        'Trainer Fees',
+        'Training Materials & Kits',
+        'Venue Rental (Training)',
+        'Guest Speakers',
+        'Course Accreditation Fees',
+        'LMS Fees (Learning Management System)',
+    ],
+    'Finance & Banking': [
+        'Loan Interest Expense',
+        'Loan Principal Repayment',
+        'Director Loan Repayment',
+        'Credit Card Fees',
+        'Bank Fees',
+        'International Wire Transfer Fees',
+        'Currency Exchange Losses',
+        'Invoicing Tools or Payment Gateways',
+        'Accounting or Bookkeeping',
+        'VAT Payments',
+        'Corporate Tax (Provision)',
+    ],
+    'Travel & Transport': [
+        'International Flights',
+        'Local Transport (Buses, Shuttles, Taxis)',
+        'Airport Transfers',
+        'Gas Stations',
+        'Tolls',
+        'Visa & Immigration Fees',
+        'Travel Insurance',
+    ],
+    'Accommodation': [
+        'Hotel Costs',
+        'Housing Allowances',
+        'Booking Fees',
+        'City Tax or Tourist Tax',
+    ],
+    'Marketing & Business Development': [
+        'Marketing & Ads (General)',
+        'Ad Spend (Direct to Platforms)',
+        'Agency Retainers',
+        'Content Production (Photo/Video)',
+        'Website Hosting & Domain',
+        'Client Entertainment',
+        'Gifts for Clients',
+    ],
+    'Operations & Internal': [
+        'Staff Salaries (Internal Team)',
+        'End of Service Gratuity',
+        'Staff Health Insurance',
+        'Recruitment Fees',
+        'Software Subscriptions (General)',
+        'Office Supplies',
+        'Courier & Shipping',
+        'Internet & Telephone',
+        'Utilities (Electricity & Water)',
+        'Office Rent or Coworking Fees',
+    ],
+    'Logistics & Events': [
+        'Event Planners',
+        'Event Venue Provider',
+        'Logistics Providers',
+        'Printing or Signage Vendors',
+        'AV Equipment Rental',
+    ],
+    'Administrative & Legal': [
+        'Trade License & Permits',
+        'Establishment Card Renewal',
+        'Legal Advisory Fees',
+        'Notary & Attestation Fees',
+        'Emirates ID & Medical Tests',
+        'Fines & Penalties',
+    ],
+    'Activities & Tourism': [
+        'Tour Guides / Cultural Tour Operators',
+        'Museums or Exhibitions',
+        'Event Agencies',
+    ],
+    'Meals': [
+        'Lunch',
+        'Coffee Breaks',
+        'Welcome or Closing Dinners',
+    ],
+    'Miscellaneous': [
+        'Gifts or Souvenirs for Participants',
+        'Insurance Providers (General)',
+        'Cleaning Services',
+        'Security Services',
+        'Charitable Donations',
+        'Petty Cash Top-ups',
+    ],
+} as const;
+
+/**
+ * Income category groups
+ */
+export const INCOME_CATEGORY_GROUPS = {
+    'Revenue': [
         'Revenue - Consulting',
         'Revenue - Service',
         'Revenue - Product',
@@ -31,6 +120,14 @@ export const GLOBAL_CATEGORIES = {
         'Revenue - Subscription',
         'Revenue - Other',
     ],
+} as const;
+
+/**
+ * Flat list of all expense categories (for select dropdowns)
+ */
+export const GLOBAL_CATEGORIES = {
+    EXPENSE: Object.values(EXPENSE_CATEGORY_GROUPS).flat(),
+    INCOME: Object.values(INCOME_CATEGORY_GROUPS).flat(),
 } as const;
 
 /**

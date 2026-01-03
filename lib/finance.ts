@@ -200,10 +200,83 @@ export async function getTransactionById(id: string): Promise<Transaction | null
     }
 }
 
+// ============================================================
+// VENDOR MANAGEMENT - Global Vendors Collection
+// ============================================================
+
+export interface Vendor {
+    id: string;
+    name: string;
+    createdAt: Date;
+}
+
 /**
- * Get unique vendor names from all transactions for autocomplete
+ * Get all vendors from the global vendors collection
  */
-export async function getUniqueVendors(): Promise<string[]> {
+export async function getVendors(): Promise<Vendor[]> {
+    try {
+        const snapshot = await getDocs(
+            query(collection(db, 'vendors'), orderBy('name', 'asc'))
+        );
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().name,
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+        }));
+    } catch (error) {
+        console.error('Error fetching vendors:', error);
+        return [];
+    }
+}
+
+/**
+ * Add a new vendor to the global collection
+ */
+export async function addVendor(name: string): Promise<Vendor> {
+    try {
+        // Check if vendor already exists (case-insensitive)
+        const existingVendors = await getVendors();
+        const exists = existingVendors.find(
+            v => v.name.toLowerCase() === name.trim().toLowerCase()
+        );
+
+        if (exists) {
+            return exists;
+        }
+
+        const docRef = await addDoc(collection(db, 'vendors'), {
+            name: name.trim(),
+            createdAt: Timestamp.now(),
+        });
+
+        return {
+            id: docRef.id,
+            name: name.trim(),
+            createdAt: new Date(),
+        };
+    } catch (error) {
+        console.error('Error adding vendor:', error);
+        throw new Error('Failed to add vendor');
+    }
+}
+
+/**
+ * Delete a vendor from the global collection
+ */
+export async function deleteVendor(id: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, 'vendors', id));
+    } catch (error) {
+        console.error('Error deleting vendor:', error);
+        throw new Error('Failed to delete vendor');
+    }
+}
+
+/**
+ * Legacy: Get unique vendor names from transactions (fallback)
+ */
+export async function getUniqueVendorsFromTransactions(): Promise<string[]> {
     try {
         const snapshot = await getDocs(collection(db, 'general_ledger'));
         const vendors = new Set<string>();
@@ -217,7 +290,7 @@ export async function getUniqueVendors(): Promise<string[]> {
 
         return Array.from(vendors).sort();
     } catch (error) {
-        console.error('Error fetching vendors:', error);
+        console.error('Error fetching vendors from transactions:', error);
         return [];
     }
 }
