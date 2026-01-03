@@ -186,6 +186,12 @@ export function isAFTechMetadata(metadata: TransactionMetadata | undefined): met
 
 // === METADATA BUILDER HELPERS ===
 
+// Helper to remove undefined keys
+function clean<T extends object>(obj: T): T {
+    Object.keys(obj).forEach(key => (obj as any)[key] === undefined && delete (obj as any)[key]);
+    return obj;
+}
+
 export function buildMetadata(formData: TransactionFormData): TransactionMetadata | undefined {
     const { unitId, type, clientId, projectId, invoiceReference, isBillable, isOperational, seminarId, studentPax, appSlug, payoutSource, serverRegion } = formData;
 
@@ -193,32 +199,32 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
     if (unitId === 'afconsult') {
         if (type === 'INCOME') {
             if (!clientId) return undefined;
-            return {
+            return clean<AFConsultIncomeMetadata>({
                 client_id: clientId,
                 project_id: projectId || undefined,
                 invoice_reference: invoiceReference || undefined,
-            } as AFConsultIncomeMetadata;
+            });
         } else {
             // EXPENSE
             if (isOperational) {
-                return { is_operational: true } as AFConsultExpenseOperationalMetadata;
+                return { is_operational: true };
             }
             if (!clientId) return undefined;
-            return {
+            return clean<AFConsultExpenseDirectMetadata>({
                 client_id: clientId,
                 project_id: projectId || undefined,
                 is_billable: isBillable || false,
-            } as AFConsultExpenseDirectMetadata;
+            });
         }
     }
 
     // IMEDA
     if (unitId === 'imeda') {
         if (seminarId || studentPax) {
-            return {
+            return clean<IMEDAMetadata>({
                 seminar_id: seminarId || undefined,
                 student_pax: studentPax || undefined,
-            } as IMEDAMetadata;
+            });
         }
         return undefined;
     }
@@ -227,7 +233,7 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
     if (unitId === 'aftech') {
         if (appSlug) {
             const metadata: AFTechMetadata = {
-                app_id: appSlug, // Mapped from form state
+                app_id: appSlug,
                 server_region: serverRegion || undefined,
             };
 
@@ -237,7 +243,7 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
                 metadata.is_payout = true;
             }
 
-            return metadata;
+            return clean<AFTechMetadata>(metadata);
         }
         return undefined;
     }

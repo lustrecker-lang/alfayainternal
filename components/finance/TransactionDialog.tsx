@@ -30,43 +30,45 @@ const AFTECH_APPS = [
 ];
 
 interface TransactionDialogProps {
-    defaultUnit?: string;
-    defaultSubProject?: string;
     triggerButton: React.ReactNode;
-    brandColor?: string;
     onSuccess?: () => void;
+    defaultUnit?: string;
+    defaultAppSlug?: string;
+    brandColor?: string;
 }
 
+const INITIAL_FORM_DATA: TransactionFormData = {
+    date: new Date().toISOString().split('T')[0],
+    vendor: '',
+    amount: 0,
+    currency: 'AED',
+    exchangeRate: 1,
+    vatRate: 0,
+    type: 'EXPENSE',
+    category: '',
+    description: '',
+    unitId: '',
+    appSlug: '',
+    payoutSource: '',
+};
+
 export default function TransactionDialog({
-    defaultUnit,
-    defaultSubProject,
     triggerButton,
-    brandColor = 'imeda',
     onSuccess,
+    defaultUnit,
+    defaultAppSlug,
+    brandColor = 'imeda',
 }: TransactionDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Form state - now uses "Total Amount" (gross) as the primary input
+    // Form state - now uses "Total Amount" (gross) as the primary input
     const [formData, setFormData] = useState<TransactionFormData>({
-        date: new Date().toISOString().split('T')[0],
-        vendor: '',
-        amount: 0, // This is now the TOTAL (gross) amount from bank
-        currency: 'AED',
-        vatRate: 5,
-        type: 'EXPENSE',
-        category: '',
-        description: '',
+        ...INITIAL_FORM_DATA,
         unitId: defaultUnit || '',
-        // Polymorphic fields
-        clientId: '',
-        projectId: '',
-        invoiceReference: '',
-        isBillable: false,
-        isOperational: false,
-        seminarId: '',
-        appSlug: defaultSubProject || '',
+        appSlug: defaultAppSlug || '',
     });
 
     // Bank statement workflow: whether VAT is included in total
@@ -96,22 +98,9 @@ export default function TransactionDialog({
 
     const resetForm = () => {
         setFormData({
-            date: new Date().toISOString().split('T')[0],
-            vendor: '',
-            amount: 0,
-            currency: 'AED',
-            vatRate: 5,
-            type: 'EXPENSE',
-            category: '',
-            description: '',
+            ...INITIAL_FORM_DATA,
             unitId: defaultUnit || '',
-            clientId: '',
-            projectId: '',
-            invoiceReference: '',
-            isBillable: false,
-            isOperational: false,
-            seminarId: '',
-            appSlug: defaultSubProject || '',
+            appSlug: defaultAppSlug || '',
         });
         setVatIncluded(true);
         setVatMethod('standard');

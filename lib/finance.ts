@@ -496,7 +496,8 @@ export async function getUniqueVendorsFromTransactions(): Promise<string[]> {
 export async function getTransactions(
     startDate?: Date,
     endDate?: Date,
-    unitId?: string
+    unitId?: string,
+    appId?: string
 ): Promise<Transaction[]> {
     try {
         let q = query(collection(db, 'general_ledger'), orderBy('createdAt', 'desc'));
@@ -507,13 +508,13 @@ export async function getTransactions(
         if (endDate) {
             q = query(q, where('createdAt', '<=', Timestamp.fromDate(endDate)));
         }
-        if (unitId && unitId !== 'all') {
-            q = query(q, where('unitId', '==', unitId));
-        }
+        // if (unitId && unitId !== 'all') {
+        //     q = query(q, where('unitId', '==', unitId));
+        // }
 
         const snapshot = await getDocs(q);
 
-        return snapshot.docs.map(doc => {
+        let transactions = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -530,6 +531,22 @@ export async function getTransactions(
                 metadata: data.metadata, // May be undefined for old records
             };
         }) as Transaction[];
+
+        // Client-side filtering for Unit ID (since we removed server-side filter)
+        if (unitId && unitId !== 'all') {
+            transactions = transactions.filter(t => t.unitId === unitId);
+        }
+
+        // Filter by appId if provided (client-side filter for now)
+        if (appId) {
+            transactions = transactions.filter(t =>
+                t.metadata &&
+                'app_id' in t.metadata &&
+                t.metadata.app_id === appId
+            );
+        }
+
+        return transactions;
     } catch (error) {
         console.error('Error fetching transactions:', error);
         return [];
@@ -597,10 +614,11 @@ export function formatCurrency(amount: number, currency: string = 'AED'): string
 export async function exportLedgerToCSV(
     startDate?: Date,
     endDate?: Date,
-    unitId?: string
+    unitId?: string,
+    appId?: string
 ): Promise<void> {
     try {
-        const transactions = await getTransactions(startDate, endDate, unitId);
+        const transactions = await getTransactions(startDate, endDate, unitId, appId);
 
         // CSV headers (core fields + flattened metadata for accountants)
         const headers = [
@@ -687,7 +705,7 @@ export async function exportLedgerToCSV(
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
 
-        const filename = `ledger_export_${unitId || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+        const filename = `ledger_export_${unitId || 'all'}${appId ? '_' + appId : ''}_${new Date().toISOString().split('T')[0]}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', filename);
         link.style.visibility = 'hidden';

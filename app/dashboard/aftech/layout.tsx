@@ -7,7 +7,9 @@ export default function AftechLayout({
 }) {
     const tabs = [
         { label: 'Portfolio', href: '/dashboard/aftech' },
-        { label: 'Overview', href: '/dashboard/aftech/overview' },
+        { label: 'Finance', href: '/dashboard/aftech/finance' },
+        { label: 'Circles', href: '/dashboard/aftech/circles' },
+        { label: 'WhosFree', href: '/dashboard/aftech/whosfree' },
     ];
 
     return (

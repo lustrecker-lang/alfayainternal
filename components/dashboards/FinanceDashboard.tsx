@@ -1,23 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, TrendingUp, TrendingDown, DollarSign, Filter, ArrowUpRight, Building2 } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, DollarSign, Filter, ArrowUpRight, Building2, Plus } from 'lucide-react';
 import DateRangePicker from '@/components/finance/DateRangePicker';
+import TransactionDialog from '@/components/finance/TransactionDialog';
 import { getTransactions, calculateSummary, exportLedgerToCSV, formatCurrency } from '@/lib/finance';
 import { BUSINESS_UNITS } from '@/config/units';
 import type { FinancialSummary } from '@/types/finance';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export default function HQDashboard() {
+interface HQDashboardProps {
+    initialUnitId?: string;
+    lockUnitId?: boolean;
+    appId?: string;
+    title?: string;
+    subtitle?: string;
+}
+
+export default function HQDashboard({
+    initialUnitId = 'all',
+    lockUnitId = false,
+    appId,
+    title = 'Al Faya Ventures',
+    subtitle = 'Consolidated Financial Overview'
+}: HQDashboardProps) {
     const [summary, setSummary] = useState<FinancialSummary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [summaryLoading, setSummaryLoading] = useState(false); // separate loading for summary updates
     const [isExporting, setIsExporting] = useState(false);
 
     // Filters
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
-    const [selectedUnitId, setSelectedUnitId] = useState<string>('all');
+    const [selectedUnitId, setSelectedUnitId] = useState<string>(initialUnitId);
 
     // Load transactions and calculate summary
     const loadSummary = async () => {
@@ -26,7 +42,8 @@ export default function HQDashboard() {
             const transactions = await getTransactions(
                 startDate || undefined,
                 endDate || undefined,
-                selectedUnitId !== 'all' ? selectedUnitId : undefined
+                selectedUnitId !== 'all' ? selectedUnitId : undefined,
+                appId
             );
             const calculatedSummary = calculateSummary(transactions);
             setSummary(calculatedSummary);
@@ -40,7 +57,7 @@ export default function HQDashboard() {
     // Load on mount and when filters change
     useEffect(() => {
         loadSummary();
-    }, [startDate, endDate, selectedUnitId]);
+    }, [startDate, endDate, selectedUnitId, appId]);
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -48,7 +65,8 @@ export default function HQDashboard() {
             await exportLedgerToCSV(
                 startDate || undefined,
                 endDate || undefined,
-                selectedUnitId !== 'all' ? selectedUnitId : undefined
+                selectedUnitId !== 'all' ? selectedUnitId : undefined,
+                appId // No export support for appId yet in lib/finance, but we added it to signature? No we haven't updated signature of exportLedger yet.
             );
         } catch (error) {
             console.error('Export failed:', error);
@@ -69,8 +87,8 @@ export default function HQDashboard() {
                     <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
                         <div>
                             <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-2">Finance Headquarters</p>
-                            <h1 className="text-4xl font-bold text-white mb-2">Al Faya Ventures</h1>
-                            <p className="text-slate-300">Consolidated Financial Overview</p>
+                            <h1 className="text-4xl font-bold text-white mb-2">{title}</h1>
+                            <p className="text-slate-300">{subtitle}</p>
                         </div>
 
                         {/* Quick Stats in Hero */}
@@ -102,28 +120,49 @@ export default function HQDashboard() {
                             />
                         </div>
 
-                        {/* Unit Filter */}
-                        <div className="flex items-center gap-3">
-                            <select
-                                value={selectedUnitId}
-                                onChange={(e) => setSelectedUnitId(e.target.value)}
-                                className="px-4 py-2.5 border border-gray-200 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-slate-500 focus:border-transparent font-sans text-sm"
-                                style={{ borderRadius: '0.25rem' }}
-                            >
-                                <option value="all">All Business Units</option>
-                                {BUSINESS_UNITS.map((unit) => (
-                                    <option key={unit.slug} value={unit.slug}>
-                                        {unit.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Unit Filter - Only show if not locked */}
+                        {!lockUnitId && (
+                            <div className="flex items-center gap-3">
+                                <select
+                                    value={selectedUnitId}
+                                    onChange={(e) => setSelectedUnitId(e.target.value)}
+                                    className="px-4 py-2.5 border border-gray-200 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-slate-500 focus:border-transparent font-sans text-sm"
+                                    style={{ borderRadius: '0.25rem' }}
+                                >
+                                    <option value="all">All Business Units</option>
+                                    {BUSINESS_UNITS.map((unit) => (
+                                        <option key={unit.slug} value={unit.slug}>
+                                            {unit.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* Add Transaction Button (Visible if filtered by unit) */}
+                        {selectedUnitId !== 'all' && (
+                            <TransactionDialog
+                                triggerButton={
+                                    <button
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-gray-900 hover:opacity-90 transition-all font-sans text-sm font-medium"
+                                        style={{ borderRadius: '0.25rem' }}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Add Transaction
+                                    </button>
+                                }
+                                defaultUnit={selectedUnitId}
+                                defaultAppSlug={appId}
+                                onSuccess={loadSummary}
+                                brandColor={selectedUnitId === 'aftech' ? 'aftech' : 'blue-600'}
+                            />
+                        )}
 
                         {/* Export Button */}
                         <button
                             onClick={handleExport}
                             disabled={isExporting || isLoading}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 dark:hover:bg-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-sm font-medium"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-sm font-medium"
                             style={{ borderRadius: '0.25rem' }}
                         >
                             <Download className="w-4 h-4" />
