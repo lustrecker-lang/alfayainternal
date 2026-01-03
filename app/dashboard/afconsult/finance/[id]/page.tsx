@@ -1,77 +1,96 @@
 'use client';
 
-import { ArrowLeft, Save, FileDown, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Upload, FileText, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState, use } from 'react';
 
-interface LineItem {
-    id: string;
-    itemName: string;
-    description: string;
-    quantity: number;
-    amount: number;
-}
+// Mock clients for AFCONSULT billable dropdown
+const AFCONSULT_CLIENTS = [
+    { id: 1, name: 'Global Industries' },
+    { id: 2, name: 'Tech Solutions' },
+    { id: 3, name: 'Green Energy Ltd' },
+];
 
-export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+// Expense categories
+const EXPENSE_CATEGORIES = [
+    'Travel & Transport',
+    'Accommodation',
+    'Meals & Entertainment',
+    'Office Supplies',
+    'Software & Subscriptions',
+    'Professional Services',
+    'Marketing & Advertising',
+    'Utilities',
+    'Other',
+];
+
+export default function ExpenseDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+    // Mock expense data - in real app, fetch based on id
     const [formData, setFormData] = useState({
-        invoiceNumber: 'INV-2026-001',
-        status: 'Paid',
-        clientName: 'Global Industries',
-        issuedDate: '2026-01-02',
-        dueDate: '2026-02-01',
-        createdDate: '2026-01-02',
+        date: '2026-01-02',
+        vendor: 'Emirates Airlines',
+        amount: '1250.00',
         currency: 'AED',
+        vat: '5',
+        category: 'Travel & Transport',
+        billableToClient: true,
+        clientId: '1',
+        notes: 'Flight to Abu Dhabi for client meeting.',
     });
 
-    const [lineItems, setLineItems] = useState<LineItem[]>([
-        { id: '1', itemName: '', description: '', quantity: 1, amount: 0 },
-    ]);
+    const [proofFile, setProofFile] = useState<{ name: string; size: number } | null>({
+        name: 'receipt_emirates_jan2026.pdf',
+        size: 245000,
+    });
 
-    const addLineItem = () => {
-        const newItem: LineItem = {
-            id: Date.now().toString(),
-            itemName: '',
-            description: '',
-            quantity: 1,
-            amount: 0,
-        };
-        setLineItems([...lineItems, newItem]);
-    };
-
-    const removeLineItem = (id: string) => {
-        if (lineItems.length > 1) {
-            setLineItems(lineItems.filter(item => item.id !== id));
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setProofFile({
+                name: e.target.files[0].name,
+                size: e.target.files[0].size,
+            });
         }
     };
 
-    const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
-        setLineItems(lineItems.map(item =>
-            item.id === id ? { ...item, [field]: value } : item
-        ));
+    const removeFile = () => {
+        setProofFile(null);
     };
 
     const calculateTotal = () => {
-        return lineItems.reduce((sum, item) => sum + (item.quantity * item.amount), 0);
-    };
-
-    const handleExportPDF = () => {
-        alert('Export PDF functionality - would generate PDF here');
+        const amount = parseFloat(formData.amount) || 0;
+        const vatRate = parseFloat(formData.vat) || 0;
+        const vatAmount = amount * (vatRate / 100);
+        return {
+            subtotal: amount,
+            vat: vatAmount,
+            total: amount + vatAmount,
+        };
     };
 
     const handleSave = () => {
-        alert('Save functionality - would save invoice data');
+        const expenseData = {
+            ...formData,
+            unitId: 'afconsult',
+            proofFileName: proofFile?.name,
+            totals: calculateTotal(),
+        };
+        console.log('Expense data to save:', expenseData);
+        alert('Save functionality - would update expense data');
     };
 
     const confirmDelete = () => {
-        alert('Delete functionality - would delete and redirect');
+        alert('Delete functionality - would remove expense and redirect');
         setShowDeleteDialog(false);
     };
 
+    const totals = calculateTotal();
+
     return (
         <div className="space-y-6">
-            {/* Header with Back and Actions */}
+            {/* Header with Back, Centered Title, and Actions */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard/afconsult/finance">
@@ -79,28 +98,21 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
                     </Link>
-                    <h1 className="text-3xl text-gray-900 dark:text-white">Invoice Details</h1>
                 </div>
+
+                <h1 className="text-3xl text-gray-900 dark:text-white absolute left-1/2 -translate-x-1/2">
+                    Expense Details
+                </h1>
+
                 <div className="flex items-center gap-2">
-                    {/* Delete Icon */}
                     <button
                         onClick={() => setShowDeleteDialog(true)}
                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         style={{ borderRadius: '0.25rem' }}
-                        title="Delete Invoice"
+                        title="Delete Expense"
                     >
                         <Trash2 className="w-5 h-5" />
                     </button>
-                    {/* PDF Button */}
-                    <button
-                        onClick={handleExportPDF}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium font-sans"
-                        style={{ borderRadius: '0.25rem' }}
-                    >
-                        <FileDown className="w-4 h-4" />
-                        PDF
-                    </button>
-                    {/* Save Button */}
                     <button
                         onClick={handleSave}
                         className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
@@ -112,198 +124,231 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content - Invoice Form */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Content - Expense Form */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                        <form id="invoice-form" className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Invoice Number</label>
-                                    <input
-                                        type="text"
-                                        value={formData.invoiceNumber}
-                                        onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                        style={{ borderRadius: '0.25rem' }}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Status</label>
-                                    <select
-                                        value={formData.status}
-                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none appearance-none bg-no-repeat bg-right"
-                                        style={{ borderRadius: '0.25rem', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center' }}
-                                    >
-                                        <option value="Draft">Draft</option>
-                                        <option value="Sent">Sent</option>
-                                        <option value="Paid">Paid</option>
-                                        <option value="Overdue">Overdue</option>
-                                    </select>
+                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                        <form className="space-y-8">
+                            {/* Core Expense Details */}
+                            <div className="space-y-6">
+                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Expense Details</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Date</label>
+                                        <input
+                                            type="date"
+                                            value={formData.date}
+                                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Vendor / Supplier</label>
+                                        <input
+                                            type="text"
+                                            value={formData.vendor}
+                                            onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                                            placeholder="e.g. Emirates Airlines"
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Amount (excl. VAT)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={formData.amount}
+                                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                            placeholder="0.00"
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Currency</label>
+                                        <select
+                                            value={formData.currency}
+                                            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        >
+                                            <option value="AED">AED</option>
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">VAT Rate (%)</label>
+                                        <select
+                                            value={formData.vat}
+                                            onChange={(e) => setFormData({ ...formData, vat: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        >
+                                            <option value="0">0% (Exempt)</option>
+                                            <option value="5">5% (Standard)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Category</label>
+                                        <select
+                                            value={formData.category}
+                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                        >
+                                            <option value="">Select category...</option>
+                                            {EXPENSE_CATEGORIES.map((cat) => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Client Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.clientName}
-                                    onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                            {/* AFCONSULT-Specific: Billable to Client */}
+                            <div className="space-y-6">
+                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Billing</h3>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="billableToClient"
+                                            checked={formData.billableToClient}
+                                            onChange={(e) => setFormData({ ...formData, billableToClient: e.target.checked, clientId: '' })}
+                                            className="w-4 h-4 text-afconsult border-gray-300 rounded focus:ring-afconsult"
+                                        />
+                                        <label htmlFor="billableToClient" className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">
+                                            Billable to Client
+                                        </label>
+                                    </div>
+
+                                    {formData.billableToClient && (
+                                        <div>
+                                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Select Client</label>
+                                            <select
+                                                value={formData.clientId}
+                                                onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                                style={{ borderRadius: '0.25rem' }}
+                                            >
+                                                <option value="">Select client...</option>
+                                                {AFCONSULT_CLIENTS.map((client) => (
+                                                    <option key={client.id} value={client.id}>{client.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div className="space-y-6">
+                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Notes</h3>
+                                <textarea
+                                    value={formData.notes}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    rows={3}
+                                    placeholder="Optional notes about this expense..."
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none resize-none font-sans"
                                     style={{ borderRadius: '0.25rem' }}
                                 />
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Issued Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.issuedDate}
-                                        onChange={(e) => setFormData({ ...formData, issuedDate: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                        style={{ borderRadius: '0.25rem' }}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Due Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.dueDate}
-                                        onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                        style={{ borderRadius: '0.25rem' }}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Currency</label>
-                                    <select
-                                        value={formData.currency}
-                                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                        className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none appearance-none bg-no-repeat bg-right"
-                                        style={{ borderRadius: '0.25rem', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center' }}
-                                    >
-                                        <option value="AED">AED</option>
-                                        <option value="EUR">EUR</option>
-                                        <option value="USD">USD</option>
-                                    </select>
-                                </div>
                             </div>
                         </form>
                     </div>
 
-                    {/* Line Items */}
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Line Items</h3>
+                    {/* Proof Upload */}
+                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Proof / Receipt</h3>
+                        </div>
 
-                        <div className="space-y-3">
-                            {lineItems.map((item, index) => (
-                                <div key={item.id} className="border border-gray-200 dark:border-gray-700 p-4" style={{ borderRadius: '0.25rem' }}>
-                                    <div className="grid grid-cols-12 gap-3 items-end">
-                                        <div className="col-span-3">
-                                            <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Item Name</label>
-                                            <input
-                                                type="text"
-                                                value={item.itemName}
-                                                onChange={(e) => updateLineItem(item.id, 'itemName', e.target.value)}
-                                                placeholder="Service/Product"
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                                style={{ borderRadius: '0.25rem' }}
-                                            />
-                                        </div>
-
-                                        <div className="col-span-4">
-                                            <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Description</label>
-                                            <input
-                                                type="text"
-                                                value={item.description}
-                                                onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                                placeholder="Brief description"
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                                style={{ borderRadius: '0.25rem' }}
-                                            />
-                                        </div>
-
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Quantity</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={item.quantity}
-                                                onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 1)}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                                style={{ borderRadius: '0.25rem' }}
-                                            />
-                                        </div>
-
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Amount</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={item.amount}
-                                                onChange={(e) => updateLineItem(item.id, 'amount', parseFloat(e.target.value) || 0)}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                                style={{ borderRadius: '0.25rem' }}
-                                            />
-                                        </div>
-
-                                        <div className="col-span-1 flex items-end justify-center pb-2">
-                                            <button
-                                                onClick={() => removeLineItem(item.id)}
-                                                disabled={lineItems.length === 1}
-                                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                style={{ borderRadius: '0.25rem' }}
-                                                title="Delete item"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                        {proofFile ? (
+                            <div className="p-4 border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 flex items-center justify-between" style={{ borderRadius: '0.25rem' }}>
+                                <div className="flex items-center gap-3">
+                                    <FileText className="w-5 h-5 text-gray-400" />
+                                    <div>
+                                        <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{proofFile.name}</p>
+                                        <p className="text-[10px] text-gray-500 font-sans uppercase tracking-wider">
+                                            {(proofFile.size / 1024).toFixed(1)} KB
+                                        </p>
                                     </div>
                                 </div>
-                            ))}
-
-                            {/* Add Line Item Button */}
-                            <button
-                                onClick={addLineItem}
-                                className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-afconsult hover:text-afconsult transition-colors flex items-center justify-center gap-2 font-sans text-sm"
-                                style={{ borderRadius: '0.25rem' }}
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Line Item
-                            </button>
-
-                            <div className="pt-4 border-t border-gray-300 dark:border-gray-600 flex justify-between items-center">
-                                <span className="text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">Total Amount:</span>
-                                <span className="text-xl font-normal text-gray-900 dark:text-white font-sans">
-                                    {formData.currency} {calculateTotal().toFixed(2)}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button className="text-xs font-normal text-afconsult hover:underline font-sans uppercase">View</button>
+                                    <button
+                                        onClick={removeFile}
+                                        className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                        style={{ borderRadius: '0.25rem' }}
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <label className="block cursor-pointer">
+                                <div className="text-center py-8 border-2 border-dashed border-gray-200 dark:border-zinc-700 hover:border-afconsult transition-colors" style={{ borderRadius: '0.5rem' }}>
+                                    <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500 font-sans">Click to upload receipt or proof</p>
+                                    <p className="text-xs text-gray-400 font-sans mt-1">PDF, JPG, PNG up to 10MB</p>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </label>
+                        )}
                     </div>
                 </div>
 
-                {/* Sidebar - Summary Only */}
-                <div className="space-y-4">
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
+                {/* Sidebar - Summary */}
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
                         <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Summary</h3>
-                        <div className="space-y-2 text-sm font-sans">
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Invoice ID:</span>
-                                <span className="text-gray-900 dark:text-white">#{id}</span>
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-sm font-sans">
+                                <span className="text-gray-500">Subtotal</span>
+                                <span className="text-gray-900 dark:text-white">{formData.currency} {totals.subtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Created:</span>
-                                <span className="text-gray-900 dark:text-white">{formData.createdDate}</span>
+                            <div className="flex justify-between text-sm font-sans">
+                                <span className="text-gray-500">VAT ({formData.vat}%)</span>
+                                <span className="text-gray-900 dark:text-white">{formData.currency} {totals.vat.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Items:</span>
-                                <span className="text-gray-900 dark:text-white">{lineItems.length}</span>
+                            <div className="border-t border-gray-100 dark:border-zinc-800 pt-3 flex justify-between text-sm font-sans">
+                                <span className="text-gray-700 dark:text-gray-300 font-medium">Total</span>
+                                <span className="text-afconsult font-medium">{formData.currency} {totals.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Status</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-sm font-sans">
+                                <span className="text-gray-500">Category</span>
+                                <span className="text-gray-900 dark:text-white">{formData.category || '—'}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-sans">
+                                <span className="text-gray-500">Billable</span>
+                                <span className="text-gray-900 dark:text-white">{formData.billableToClient ? 'Yes' : 'No'}</span>
+                            </div>
+                            {formData.billableToClient && formData.clientId && (
+                                <div className="flex justify-between text-sm font-sans">
+                                    <span className="text-gray-500">Client</span>
+                                    <span className="text-gray-900 dark:text-white">
+                                        {AFCONSULT_CLIENTS.find(c => c.id.toString() === formData.clientId)?.name || '—'}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-sm font-sans">
+                                <span className="text-gray-500">Proof</span>
+                                <span className="text-gray-900 dark:text-white">{proofFile ? 'Attached' : 'None'}</span>
                             </div>
                         </div>
                     </div>
@@ -316,21 +361,21 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteDialog(false)} />
                     <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
                         <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                            <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Delete Invoice?</h3>
+                            <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Delete Expense?</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
-                                Are you sure you want to delete this invoice? This action cannot be undone.
+                                Are you sure you want to delete this expense? This action cannot be undone.
                             </p>
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setShowDeleteDialog(false)}
-                                    className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-sans"
+                                    className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-sans text-sm"
                                     style={{ borderRadius: '0.25rem' }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 py-2 bg-red-600 text-white font-normal hover:bg-red-700 transition-colors font-sans"
+                                    className="flex-1 py-2 bg-red-600 text-white font-normal hover:bg-red-700 transition-colors font-sans text-sm"
                                     style={{ borderRadius: '0.25rem' }}
                                 >
                                     Delete
