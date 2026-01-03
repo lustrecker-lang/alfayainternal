@@ -90,26 +90,28 @@ export default function FinancePage() {
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-700/30 transition-colors">
-                            <div className="flex items-center gap-4">
-                                {/* Arrow icons without circular background */}
-                                {view === 'INVOICES' ? (
-                                    <ArrowUpRight className="w-5 h-5 text-green-600" />
-                                ) : (
-                                    <ArrowDownLeft className="w-5 h-5 text-red-600" />
-                                )}
-                                <div>
-                                    <p className="font-normal text-gray-900 dark:text-white font-sans">
-                                        {view === 'INVOICES' ? `Invoice #2026-00${i}` : `Expense Reimb. #${i}`}
-                                    </p>
-                                    <p className="text-xs text-gray-500 font-sans">Global Industries • Jan 02, 2026</p>
+                        <Link key={i} href={`/dashboard/afconsult/finance/${i}`}>
+                            <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-700/30 transition-colors cursor-pointer">
+                                <div className="flex items-center gap-4">
+                                    {/* Arrow icons without circular background */}
+                                    {view === 'INVOICES' ? (
+                                        <ArrowUpRight className="w-5 h-5 text-green-600" />
+                                    ) : (
+                                        <ArrowDownLeft className="w-5 h-5 text-red-600" />
+                                    )}
+                                    <div>
+                                        <p className="font-normal text-gray-900 dark:text-white font-sans">
+                                            {view === 'INVOICES' ? `Invoice #2026-00${i}` : `Expense Reimb. #${i}`}
+                                        </p>
+                                        <p className="text-xs text-gray-500 font-sans">Global Industries • Jan 02, 2026</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-normal text-gray-900 dark:text-white font-sans">AED 5,000.00</p>
+                                    <button className="text-[10px] font-normal text-afconsult uppercase hover:underline font-sans">View Details</button>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="font-normal text-gray-900 dark:text-white font-sans">AED 5,000.00</p>
-                                <button className="text-[10px] font-normal text-afconsult uppercase hover:underline font-sans">Download PDF</button>
-                            </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>
