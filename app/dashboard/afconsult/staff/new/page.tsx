@@ -42,6 +42,7 @@ export default function NewConsultantPage() {
             };
 
             await createConsultant(newConsultant);
+            showToast.success('Consultant created successfully');
             router.push('/dashboard/afconsult/staff');
         } catch (error) {
             console.error('Error saving consultant:', error);
