@@ -5,9 +5,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProject } from '@/lib/project';
-import { getClients } from '@/lib/finance';
+import { getClients, type ClientFull } from '@/lib/finance';
 import { showToast } from '@/lib/toast';
-import type { ClientFull } from '@/types/finance';
 
 export default function NewProjectPage() {
     const router = useRouter();

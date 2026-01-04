@@ -5,10 +5,9 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getProject, updateProject, deleteProject } from '@/lib/project';
-import { getClients } from '@/lib/finance';
+import { getClients, type ClientFull } from '@/lib/finance';
 import { showToast } from '@/lib/toast';
 import type { Project } from '@/types/project';
-import type { ClientFull } from '@/types/finance';
 
 export default function ProjectDetailPage() {
     const params = useParams();
