@@ -8,6 +8,7 @@ export default function ImedaLayout({
     const tabs = [
         { label: 'Overview', href: '/dashboard/imeda' },
         { label: 'Clients', href: '/dashboard/imeda/clients' },
+        { label: 'Courses', href: '/dashboard/imeda/courses' },
         { label: 'Seminars', href: '/dashboard/imeda/seminars' },
         { label: 'Campuses', href: '/dashboard/imeda/campuses' },
         { label: 'Invoices', href: '/dashboard/imeda/invoices' },

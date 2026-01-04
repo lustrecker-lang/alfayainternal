@@ -296,6 +296,8 @@ export interface Client {
 
 // Full client record for client management pages
 export interface ClientFull extends Client {
+    clientType?: 'company' | 'personal';
+    vatNumber?: string | null;
     industry?: string | null;
     contact?: string | null;
     email?: string | null;
@@ -307,6 +309,15 @@ export interface ClientFull extends Client {
         zip_code?: string | null;
         country?: string | null;
     } | null;
+    contacts?: {
+        title?: string;
+        name?: string;
+        occupation?: string;
+        email1?: string;
+        email2?: string;
+        phone1?: string;
+        phone2?: string;
+    }[];
 }
 
 /**
@@ -327,11 +338,14 @@ export async function getClients(unitId: string): Promise<ClientFull[]> {
                 id: doc.id,
                 name: data.name,
                 unitId: data.unitId,
+                clientType: data.clientType,
+                vatNumber: data.vatNumber,
                 industry: data.industry,
                 contact: data.contact,
                 email: data.email,
                 phone: data.phone,
                 address: data.address,
+                contacts: data.contacts || [],
                 createdAt: data.createdAt?.toDate() || new Date(),
             };
         });
@@ -354,11 +368,14 @@ export async function getClientById(clientId: string): Promise<ClientFull | null
             id: docSnap.id,
             name: data.name,
             unitId: data.unitId,
+            clientType: data.clientType,
+            vatNumber: data.vatNumber,
             industry: data.industry,
             contact: data.contact,
             email: data.email,
             phone: data.phone,
             address: data.address,
+            contacts: data.contacts || [],
             createdAt: data.createdAt?.toDate() || new Date(),
         };
     } catch (error) {

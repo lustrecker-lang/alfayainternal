@@ -57,6 +57,11 @@ service cloud.firestore {
     match /services/{serviceId} {
         allow read, write: if true;
     }
+
+    // Courses
+    match /courses/{course} {
+        allow read, write: if true;
+    }
     
     // Default: deny access to all other collections
     match /{document=**} {

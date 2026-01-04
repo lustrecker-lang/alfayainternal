@@ -66,9 +66,18 @@ export default function NewImedaClientPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name.trim()) {
-            setError('Company/Client name is required');
-            showToast.error('Company/Client name is required');
+
+        // For personal clients, use Contact 1's name as the client name
+        const clientName = formData.clientType === 'personal'
+            ? contacts[0]?.name?.trim()
+            : formData.name.trim();
+
+        if (!clientName) {
+            const errorMsg = formData.clientType === 'personal'
+                ? 'Primary contact name is required for personal clients'
+                : 'Company name is required';
+            setError(errorMsg);
+            showToast.error(errorMsg);
             return;
         }
 
@@ -81,10 +90,13 @@ export default function NewImedaClientPage() {
             const primaryContact = validContacts[0];
 
             await addClientFull({
-                name: formData.name.trim(),
+                name: clientName,
                 unitId: 'imeda',
                 clientType: formData.clientType,
-                vatNumber: formData.vatNumber.trim() || undefined,
+                // Only include VAT for company clients
+                vatNumber: formData.clientType === 'company' && formData.vatNumber.trim()
+                    ? formData.vatNumber.trim()
+                    : undefined,
                 contact: primaryContact?.name || undefined,
                 email: primaryContact?.email1 || undefined,
                 phone: primaryContact?.phone1 || undefined,
@@ -180,34 +192,45 @@ export default function NewImedaClientPage() {
                             </div>
                         </div>
 
-                        {/* VAT Number */}
-                        <div>
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">VAT Number</label>
-                            <input
-                                type="text"
-                                value={formData.vatNumber}
-                                onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
-                                style={{ borderRadius: '0.25rem' }}
-                                placeholder="e.g., 100123456700003"
-                            />
-                        </div>
+                        {/* VAT Number - Only for Company clients */}
+                        {formData.clientType === 'company' && (
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">VAT Number</label>
+                                <input
+                                    type="text"
+                                    value={formData.vatNumber}
+                                    onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                    placeholder="e.g., 100123456700003"
+                                />
+                            </div>
+                        )}
 
-                        {/* Company Name */}
-                        <div className="lg:col-span-2">
-                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">
-                                {formData.clientType === 'company' ? 'Company Name' : 'Full Name'} *
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
-                                style={{ borderRadius: '0.25rem' }}
-                                placeholder={formData.clientType === 'company' ? 'e.g., ACME Corporation' : 'e.g., John Smith'}
-                                required
-                            />
-                        </div>
+                        {/* Company Name - Only for Company clients */}
+                        {formData.clientType === 'company' && (
+                            <div className="lg:col-span-2">
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">
+                                    Company Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                    placeholder="e.g., ACME Corporation"
+                                    required
+                                />
+                            </div>
+                        )}
+
+                        {/* Personal client hint */}
+                        {formData.clientType === 'personal' && (
+                            <div className="lg:col-span-2 p-3 bg-imeda/5 border border-imeda/20 text-sm text-imeda" style={{ borderRadius: '0.25rem' }}>
+                                ℹ️ For personal clients, the Primary Contact name below will be used as the client name.
+                            </div>
+                        )}
 
                         {/* Street */}
                         <div>
@@ -296,7 +319,7 @@ export default function NewImedaClientPage() {
                             >
                                 <div className="flex justify-between items-center mb-4">
                                     <span className="text-xs font-medium text-gray-500 font-sans uppercase">
-                                        Contact {index + 1} {index === 0 && '(Primary)'}
+                                        Contact {index + 1} {index === 0 && formData.clientType === 'personal' ? '(Client)' : index === 0 ? '(Primary)' : ''}
                                     </span>
                                     {contacts.length > 1 && (
                                         <button
@@ -331,7 +354,9 @@ export default function NewImedaClientPage() {
 
                                     {/* Name */}
                                     <div>
-                                        <label className="block text-xs font-normal text-gray-500 mb-1 font-sans">Full Name</label>
+                                        <label className="block text-xs font-normal text-gray-500 mb-1 font-sans">
+                                            Full Name {index === 0 && formData.clientType === 'personal' && '*'}
+                                        </label>
                                         <input
                                             type="text"
                                             value={contact.name}
@@ -339,6 +364,7 @@ export default function NewImedaClientPage() {
                                             className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
                                             style={{ borderRadius: '0.25rem' }}
                                             placeholder="John Smith"
+                                            required={index === 0 && formData.clientType === 'personal'}
                                         />
                                     </div>
 
