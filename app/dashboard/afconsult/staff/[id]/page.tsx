@@ -2,14 +2,20 @@
 
 import { ArrowLeft, Save, Trash2, FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useState, use, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Added useRouter
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation'; // Added useParams
 import { getConsultant, updateConsultant, deleteConsultant } from '@/lib/staff';
 import type { Consultant } from '@/types/staff';
 import { formatCurrency } from '@/lib/finance'; // Optional: for displaying stats
 
-export default function ConsultantDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+// Required for output: 'export'
+export function generateStaticParams() {
+    return [];
+}
+
+export default function ConsultantDetailPage() {
+    const params = useParams();
+    const id = params.id as string;
     const router = useRouter(); // Hook for navigation
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
