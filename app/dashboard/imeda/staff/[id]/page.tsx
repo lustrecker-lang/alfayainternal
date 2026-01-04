@@ -2,7 +2,7 @@ import ImedaStaffDetailClient from '@/components/imeda/StaffDetailClient';
 
 // Required for output: 'export' - returns empty array for client-side routing
 export function generateStaticParams() {
-    return [] as { id: string }[];
+    return [{ id: 'debug' }];
 }
 
 export default function ImedaStaffDetailPage() {

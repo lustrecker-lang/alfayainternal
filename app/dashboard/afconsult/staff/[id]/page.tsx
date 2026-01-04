@@ -2,7 +2,7 @@ import ConsultantDetailClient from '@/components/staff/ConsultantDetailClient';
 
 // Required for output: 'export' - returns empty array for client-side routing
 export function generateStaticParams() {
-    return [] as { id: string }[];
+    return [{ id: 'debug' }];
 }
 
 export default function ConsultantDetailPage() {

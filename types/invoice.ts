@@ -48,6 +48,15 @@ export interface NewInvoiceData {
     unit_id: string;
     invoice_number: string;
     client_id: string;
+    client_name: string;
+
+    // Holding Company Snapshot
+    holding_company_name?: string;
+    holding_company_address?: string;
+    holding_company_trn?: string;
+    holding_company_trade_license?: string;
+    holding_company_email?: string;
+    holding_company_phone?: string;
 
     date_issue: string | Date;
     date_due: string | Date;
