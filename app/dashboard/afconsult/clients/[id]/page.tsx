@@ -63,20 +63,26 @@ export default function ClientDetailPage() {
     const handleSave = async () => {
         try {
             setSaving(true);
-            await updateClient(id, {
+
+            // Build address object, only including defined values
+            const address: any = {};
+            if (formData.street_line1) address.street_line1 = formData.street_line1;
+            if (formData.street_line2) address.street_line2 = formData.street_line2;
+            if (formData.city) address.city = formData.city;
+            if (formData.zip_code) address.zip_code = formData.zip_code;
+            if (formData.country) address.country = formData.country;
+
+            // Build update payload, only including defined values
+            const updateData: any = {
                 name: formData.name,
-                industry: formData.industry || undefined,
-                contact: formData.contact || undefined,
-                email: formData.email || undefined,
-                phone: formData.phone || undefined,
-                address: {
-                    street_line1: formData.street_line1 || undefined,
-                    street_line2: formData.street_line2 || undefined,
-                    city: formData.city || undefined,
-                    zip_code: formData.zip_code || undefined,
-                    country: formData.country || undefined,
-                },
-            });
+            };
+            if (formData.industry) updateData.industry = formData.industry;
+            if (formData.contact) updateData.contact = formData.contact;
+            if (formData.email) updateData.email = formData.email;
+            if (formData.phone) updateData.phone = formData.phone;
+            if (Object.keys(address).length > 0) updateData.address = address;
+
+            await updateClient(id, updateData);
             showToast.success('Client updated successfully');
         } catch (error) {
             console.error('Error updating client:', error);
