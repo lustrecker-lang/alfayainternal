@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { addClientFull } from '@/lib/finance';
+import { showToast } from '@/lib/toast';
 
 // Comprehensive country list
 const COUNTRIES = [
@@ -90,6 +91,7 @@ export default function NewImedaClientPage() {
         e.preventDefault();
         if (!formData.name.trim()) {
             setError('Company/Client name is required');
+            showToast.error('Company/Client name is required');
             return;
         }
 
@@ -127,10 +129,12 @@ export default function NewImedaClientPage() {
                 })) : undefined,
             } as Parameters<typeof addClientFull>[0]);
 
+            showToast.success('Client created successfully');
             router.push('/dashboard/imeda/clients');
         } catch (err) {
             console.error('Error creating client:', err);
             setError('Failed to create client. Please try again.');
+            showToast.error('Failed to create client. Please try again');
         } finally {
             setIsSubmitting(false);
         }
