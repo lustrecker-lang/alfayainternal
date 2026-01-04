@@ -8,7 +8,7 @@ import { getProject, updateProject, deleteProject } from '@/lib/project';
 import { getClients } from '@/lib/finance';
 import { showToast } from '@/lib/toast';
 import type { Project } from '@/types/project';
-import type { ClientBasic } from '@/types/finance';
+import type { ClientFull } from '@/types/finance';
 
 export default function ProjectDetailPage() {
     const params = useParams();
@@ -16,7 +16,7 @@ export default function ProjectDetailPage() {
     const router = useRouter();
 
     const [project, setProject] = useState<Project | null>(null);
-    const [clients, setClients] = useState<ClientBasic[]>([]);
+    const [clients, setClients] = useState<ClientFull[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);

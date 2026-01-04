@@ -7,11 +7,11 @@ import { useRouter } from 'next/navigation';
 import { createProject } from '@/lib/project';
 import { getClients } from '@/lib/finance';
 import { showToast } from '@/lib/toast';
-import type { ClientBasic } from '@/types/finance';
+import type { ClientFull } from '@/types/finance';
 
 export default function NewProjectPage() {
     const router = useRouter();
-    const [clients, setClients] = useState<ClientBasic[]>([]);
+    const [clients, setClients] = useState<ClientFull[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
