@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { BUSINESS_UNITS } from '@/config/units';
+import { getCompanyBrands } from '@/lib/brands';
+import { CompanyBrand } from '@/types/brands';
 
-// Map slugs to cover images
+// Map slugs to static cover images (Fallback)
 const COVER_IMAGES: Record<string, string> = {
     'afconsult': '/covers/afconsult_cover.jpg',
     'aftech': '/covers/aftech_cover.jpg',
@@ -13,6 +16,19 @@ const COVER_IMAGES: Record<string, string> = {
 };
 
 export default function AppLauncher() {
+    const [brands, setBrands] = useState<CompanyBrand[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadBrands();
+    }, []);
+
+    const loadBrands = async () => {
+        const data = await getCompanyBrands();
+        setBrands(data);
+        setLoading(false);
+    };
+
     return (
         <div className="py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,7 +41,14 @@ export default function AppLauncher() {
                 {/* Card Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {BUSINESS_UNITS.map((unit) => {
-                        const coverImage = COVER_IMAGES[unit.slug];
+                        // Find dynamic brand data
+                        const brand = brands.find(b => b.unit_slug === unit.slug);
+
+                        // Cover Logic: Dynamic Banner -> Static Map -> Color Fallback
+                        const coverImage = brand?.brand_banner_url || COVER_IMAGES[unit.slug];
+
+                        // Logo Logic: Dynamic Squared -> Dynamic Logo -> Static Config Logo
+                        const logoImage = brand?.logo_squared_url || brand?.logo_url || unit.logo;
 
                         return (
                             <Link
@@ -46,7 +69,9 @@ export default function AppLauncher() {
                                 >
                                     {/* Cover Image */}
                                     <div className="relative h-40 sm:h-48 bg-gray-100 dark:bg-zinc-900 overflow-hidden">
-                                        {coverImage ? (
+                                        {loading ? (
+                                            <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-zinc-800" />
+                                        ) : coverImage ? (
                                             <Image
                                                 src={coverImage}
                                                 alt={unit.name}
@@ -56,12 +81,13 @@ export default function AppLauncher() {
                                         ) : (
                                             <div
                                                 className="w-full h-full flex items-center justify-center"
-                                                style={{ backgroundColor: `var(--${unit.brandColor}, #6b7280)` }}
+                                                style={{ backgroundColor: brand?.brand_color_primary || `var(--${unit.brandColor}, #6b7280)` }}
                                             >
-                                                {unit.logo && (
-                                                    <div className="relative w-16 h-16">
+                                                {/* Fallback to inverted logo in center if no cover available */}
+                                                {(brand?.logo_url || unit.logo) && (
+                                                    <div className="relative w-16 h-16 opacity-50">
                                                         <Image
-                                                            src={unit.logo}
+                                                            src={brand?.logo_url || unit.logo!}
                                                             alt={unit.name}
                                                             fill
                                                             className="object-contain invert"
@@ -70,24 +96,37 @@ export default function AppLauncher() {
                                                 )}
                                             </div>
                                         )}
+
+                                        {/* Overlay Gradient for depth */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                                     </div>
 
                                     {/* Card Footer */}
                                     <div className="p-4 flex items-center gap-3">
-                                        {unit.logo && (
-                                            <div className="relative w-8 h-8 flex-shrink-0">
-                                                <Image
-                                                    src={unit.logo}
+                                        {/* Squared Logo / Icon */}
+                                        <div className="relative w-10 h-10 flex-shrink-0 bg-white dark:bg-zinc-700 rounded-lg shadow-sm border border-gray-100 dark:border-zinc-600 overflow-hidden flex items-center justify-center">
+                                            {loading ? (
+                                                <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-zinc-600" />
+                                            ) : logoImage ? (
+                                                <img
+                                                    src={logoImage}
                                                     alt=""
-                                                    fill
-                                                    className="object-contain dark:invert"
+                                                    className="w-full h-full object-cover"
                                                 />
-                                            </div>
-                                        )}
+                                            ) : (
+                                                <span className="text-sm font-bold text-gray-400">
+                                                    {unit.name.charAt(0)}
+                                                </span>
+                                            )}
+                                        </div>
+
                                         <div>
-                                            <h3 className="text-base font-medium text-gray-900 dark:text-white font-sans">
-                                                {unit.name}
+                                            <h3 className="text-base font-medium text-gray-900 dark:text-white font-sans group-hover:text-afconsult transition-colors">
+                                                {brand?.display_name || unit.name}
                                             </h3>
+                                            <p className="text-xs text-gray-400 font-mono hidden sm:block">
+                                                {unit.type.toLowerCase()}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

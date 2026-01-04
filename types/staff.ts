@@ -10,7 +10,7 @@ export interface Consultant {
     unitId: string; // 'afconsult'
     status: 'active' | 'archived';
 
-    // Potential future fields
+    employeeId?: string; // Format: 00000
     avatarUrl?: string;
     documents?: StaffDocument[];
 }

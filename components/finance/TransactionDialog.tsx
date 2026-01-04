@@ -9,6 +9,7 @@ import VendorCombobox from '@/components/finance/VendorCombobox';
 import ClientCombobox from '@/components/finance/ClientCombobox';
 import CategorySelect from '@/components/finance/CategorySelect';
 import { X, Upload, DollarSign, FileText, ChevronDown } from 'lucide-react';
+import { useBrandTheme } from '@/hooks/useBrandTheme';
 
 // Mock data sources - will be replaced with Firestore fetches later
 const AFCONSULT_CLIENTS = [
@@ -35,6 +36,7 @@ interface TransactionDialogProps {
     defaultUnit?: string;
     defaultAppSlug?: string;
     brandColor?: string;
+    prefillData?: Partial<TransactionFormData>;
 }
 
 const INITIAL_FORM_DATA: TransactionFormData = {
@@ -57,19 +59,25 @@ export default function TransactionDialog({
     onSuccess,
     defaultUnit,
     defaultAppSlug,
-    brandColor = 'imeda',
+    // brandColor prop is now deprecated/fallback, we use the hook
+    brandColor = 'gray-500',
+    prefillData
 }: TransactionDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Form state - now uses "Total Amount" (gross) as the primary input
-    // Form state - now uses "Total Amount" (gross) as the primary input
+    // Form state 
     const [formData, setFormData] = useState<TransactionFormData>({
         ...INITIAL_FORM_DATA,
         unitId: defaultUnit || '',
         appSlug: defaultAppSlug || '',
+        ...prefillData
     });
+
+    // Theme Hook
+    const { brand } = useBrandTheme(formData.unitId || defaultUnit || '');
+    const activeColor = brand?.brand_color_primary || '#6b7280'; // Fallback to gray-500
 
     // Bank statement workflow: whether VAT is included in total
     const [vatIncluded, setVatIncluded] = useState(true);
@@ -93,8 +101,6 @@ export default function TransactionDialog({
             setFormData(prev => ({ ...prev, vatRate: 0 }));
         }
     }, [formData.currency]);
-
-
 
     const resetForm = () => {
         setFormData({
@@ -221,20 +227,22 @@ export default function TransactionDialog({
             <div onClick={() => setIsOpen(true)}>{triggerButton}</div>
 
             {isOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-zinc-900 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2">
-                                <DollarSign className={`w-5 h-5 ${brandColor === 'aftech' ? 'text-[#737373]' : `text-${brandColor}`}`} />
+                                <DollarSign
+                                    className="w-5 h-5"
+                                    style={{ color: activeColor }}
+                                />
                                 <h2 className="text-xl text-gray-900 dark:text-white font-sans">
                                     {formData.type === 'INCOME' ? 'Log Income' : 'Log Expense'}
                                 </h2>
                             </div>
                             <button
                                 onClick={() => { setIsOpen(false); resetForm(); }}
-                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                style={{ borderRadius: '0.25rem' }}
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded"
                             >
                                 <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                             </button>
@@ -533,9 +541,8 @@ export default function TransactionDialog({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className={`flex-1 px-4 py-2 text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-sans ${brandColor === 'aftech' ? 'bg-[#737373]' : `bg-${brandColor}`
-                                        }`}
-                                    style={{ borderRadius: '0.25rem' }}
+                                    className="flex-1 px-4 py-2 text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-sans rounded"
+                                    style={{ backgroundColor: activeColor }}
                                 >
                                     {isSubmitting ? 'Saving...' : 'Save Transaction'}
                                 </button>

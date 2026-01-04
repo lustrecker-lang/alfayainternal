@@ -25,7 +25,37 @@ service cloud.firestore {
 
     // Projects
     match /projects/{project} {
-      allow read, write: if true;
+        allow read, write: if true;
+    }
+
+    // Invoices
+    match /invoices/{invoice} {
+        allow read, write: if true;
+    }
+
+    // Company Settings (Singleton)
+    match /settings/{document} {
+        allow read, write: if true;
+    }
+
+    // Company Brands
+    match /company_brands/{brand} {
+        allow read, write: if true;
+    }
+
+    // Global Countries
+    match /countries/{country} {
+        allow read, write: if true;
+    }
+
+    // Campuses
+    match /campuses/{campus} {
+        allow read, write: if true;
+    }
+
+    // Services
+    match /services/{serviceId} {
+        allow read, write: if true;
     }
     
     // Default: deny access to all other collections

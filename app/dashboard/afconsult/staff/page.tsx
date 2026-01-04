@@ -36,7 +36,7 @@ export default function StaffPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl text-gray-900 dark:text-white font-sans">Consulting Staff</h1>
+                <h1 className="text-3xl text-gray-900 dark:text-white">Consulting Staff</h1>
                 <Link href="/dashboard/afconsult/staff/new">
                     <button className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans" style={{ borderRadius: '0.25rem' }}>
                         <Plus className="w-4 h-4" />
@@ -108,8 +108,8 @@ export default function StaffPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${consultant.status === 'active'
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-gray-100 text-gray-800'
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-gray-100 text-gray-800'
                                             }`}>
                                             {consultant.status === 'active' ? 'Active' : 'Archived'}
                                         </span>

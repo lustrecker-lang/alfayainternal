@@ -7,6 +7,26 @@ service firebase.storage {
     match /transaction_proofs/{allPaths=**} {
       allow read, write: if true;
     }
+
+    // Company Assets (Logo, Stamp, Signature)
+    match /company_assets/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Campus Pictures
+    match /campuses/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Staff Avatars
+    match /staff_avatars/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Services Images
+    match /services/{allPaths=**} {
+      allow read, write: if true;
+    }
     
     // Default: deny access to all other paths
     match /{allPaths=**} {

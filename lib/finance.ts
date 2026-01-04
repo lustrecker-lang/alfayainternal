@@ -296,17 +296,17 @@ export interface Client {
 
 // Full client record for client management pages
 export interface ClientFull extends Client {
-    industry?: string;
-    contact?: string;
-    email?: string;
-    phone?: string;
+    industry?: string | null;
+    contact?: string | null;
+    email?: string | null;
+    phone?: string | null;
     address?: {
-        street_line1?: string;
-        street_line2?: string;
-        city?: string;
-        zip_code?: string;
-        country?: string;
-    };
+        street_line1?: string | null;
+        street_line2?: string | null;
+        city?: string | null;
+        zip_code?: string | null;
+        country?: string | null;
+    } | null;
 }
 
 /**
@@ -446,8 +446,25 @@ export async function addClientFull(client: Omit<ClientFull, 'id' | 'createdAt'>
  */
 export async function updateClient(clientId: string, updates: Partial<ClientFull>): Promise<void> {
     try {
+        // Helper to recursively remove undefined values (Firestore doesn't accept them)
+        // But we WANT to keep null values to "clear" fields if explicitly passed
+        const cleanPayload = (obj: any): any => {
+            const cleaned: any = {};
+            for (const [key, value] of Object.entries(obj)) {
+                if (value === undefined) continue;
+                if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+                    cleaned[key] = cleanPayload(value);
+                } else {
+                    cleaned[key] = value;
+                }
+            }
+            return cleaned;
+        };
+
+        const updateData = cleanPayload(updates);
+
         await updateDoc(doc(db, 'clients', clientId), {
-            ...updates,
+            ...updateData,
             updatedAt: Timestamp.now(),
         });
     } catch (error) {

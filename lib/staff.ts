@@ -9,12 +9,24 @@ import {
     where,
     getDocs,
     Timestamp,
-    orderBy
+    orderBy,
+    runTransaction
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
 import type { Consultant, NewConsultantData } from '@/types/staff';
 
 const COLLECTION = 'staff';
+
+function removeUndefined(obj: any) {
+    const newObj = { ...obj };
+    Object.keys(newObj).forEach(key => {
+        if (newObj[key] === undefined) {
+            delete newObj[key];
+        }
+    });
+    return newObj;
+}
 
 /**
  * Fetch all active consultants for a unit
@@ -49,6 +61,36 @@ export async function getConsultants(unitId: string = 'afconsult'): Promise<Cons
 }
 
 /**
+ * Get the next sequential Employee ID (00000 format)
+ */
+async function getNextEmployeeId(): Promise<string> {
+    const counterRef = doc(db, 'settings', 'staff_counter');
+
+    return await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+        let nextCount = 0;
+
+        if (counterDoc.exists()) {
+            nextCount = counterDoc.data().current + 1;
+        }
+
+        transaction.set(counterRef, { current: nextCount }, { merge: true });
+
+        // Pad with zeros to 5 digits
+        return nextCount.toString().padStart(5, '0');
+    });
+}
+
+/**
+ * Upload staff avatar to storage
+ */
+export async function uploadStaffAvatar(id: string, file: File): Promise<string> {
+    const storageRef = ref(storage, `staff_avatars/${id}_${Date.now()}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+}
+
+/**
  * Get a single consultant by ID
  */
 export async function getConsultant(id: string): Promise<Consultant | null> {
@@ -77,14 +119,17 @@ export async function getConsultant(id: string): Promise<Consultant | null> {
  */
 export async function createConsultant(data: NewConsultantData): Promise<string> {
     try {
-        const docData = {
+        const employeeId = data.unitId === 'imeda' ? await getNextEmployeeId() : undefined;
+
+        const docData = removeUndefined({
             ...data,
             joinedDate: Timestamp.fromDate(data.joinedDate),
             rate: Number(data.rate), // Ensure number
             unitId: data.unitId || 'afconsult',
             status: 'active',
             createdAt: Timestamp.now(),
-        };
+            employeeId: employeeId,
+        });
 
         const docRef = await addDoc(collection(db, COLLECTION), docData);
         return docRef.id;
@@ -101,16 +146,12 @@ export async function updateConsultant(id: string, data: Partial<Consultant>): P
     try {
         const docRef = doc(db, COLLECTION, id);
 
-        const updates: any = { ...data };
-        if (data.joinedDate) {
-            updates.joinedDate = Timestamp.fromDate(data.joinedDate);
-        }
-        if (data.rate) {
-            updates.rate = Number(data.rate);
-        }
+        const updates = removeUndefined({
+            ...data,
+            joinedDate: data.joinedDate ? Timestamp.fromDate(data.joinedDate) : undefined,
+            rate: data.rate ? Number(data.rate) : undefined,
+        });
 
-        // Remove undefined
-        Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
         delete updates.id; // Don't update ID
 
         await updateDoc(docRef, updates);

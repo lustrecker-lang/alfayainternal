@@ -250,3 +250,37 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
 
     return undefined;
 }
+
+// === CAMPUS TYPES ===
+
+export interface Campus {
+    id: string;
+    name: string;
+    country: string;
+    address: string;
+    googleMapsLink?: string;
+    imageUrl?: string;
+    directorId?: string;
+    createdAt: Date;
+    updatedAt?: Date;
+}
+
+// === SERVICE TYPES ===
+
+export type ServiceType = 'Default Service' | 'Optional Service';
+export type ServiceTimeUnit = 'Per Seminar' | 'Per Workday' | 'Per Night' | 'Per Workweek' | 'Per Day';
+
+import { Currency } from './settings';
+
+export interface ImedaService {
+    id: string;
+    name: string;
+    description: string;
+    type: ServiceType;
+    timeUnit: ServiceTimeUnit;
+    imageUrl?: string;
+    campusCosts: Record<string, number>; // All costs are in AED
+    order: number; // For custom ordering in quotations
+    createdAt: Date;
+    updatedAt?: Date;
+}

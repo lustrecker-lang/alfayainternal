@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { addClientFull } from '@/lib/finance';
 import { showToast } from '@/lib/toast';
+import CountrySelect from '@/components/ui/CountrySelect';
 
 export default function NewClientPage() {
     const router = useRouter();
@@ -176,13 +177,9 @@ export default function NewClientPage() {
 
                         <div>
                             <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Country</label>
-                            <input
-                                type="text"
+                            <CountrySelect
                                 value={formData.country}
-                                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                style={{ borderRadius: '0.25rem' }}
-                                placeholder="United Arab Emirates"
+                                onChange={(val) => setFormData({ ...formData, country: val })}
                             />
                         </div>
                     </div>

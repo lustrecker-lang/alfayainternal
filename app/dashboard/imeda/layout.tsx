@@ -9,6 +9,10 @@ export default function ImedaLayout({
         { label: 'Overview', href: '/dashboard/imeda' },
         { label: 'Clients', href: '/dashboard/imeda/clients' },
         { label: 'Seminars', href: '/dashboard/imeda/seminars' },
+        { label: 'Campuses', href: '/dashboard/imeda/campuses' },
+        { label: 'Invoices', href: '/dashboard/imeda/invoices' },
+        { label: 'Services', href: '/dashboard/imeda/services' },
+        { label: 'Staff', href: '/dashboard/imeda/staff' },
         { label: 'Finance', href: '/dashboard/imeda/finance' },
     ];
 

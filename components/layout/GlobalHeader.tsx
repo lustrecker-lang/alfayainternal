@@ -40,7 +40,7 @@ export default function GlobalHeader() {
                         alt="Al Faya Ventures"
                         width={140}
                         height={32}
-                        className="h-8 w-auto dark:invert"
+                        className="dark:invert w-auto h-8"
                         priority
                     />
                 </Link>
@@ -105,13 +105,14 @@ export default function GlobalHeader() {
                                         )}
                                     </button>
                                 )}
-                                <button
+                                <Link
+                                    href="/dashboard/settings"
                                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors font-sans"
                                     onClick={() => setShowUserMenu(false)}
                                 >
                                     <Settings className="w-4 h-4" />
-                                    Settings
-                                </button>
+                                    Company Settings
+                                </Link>
                                 <hr className="my-1 border-gray-200 dark:border-gray-700" />
                                 <button
                                     className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors font-sans"
