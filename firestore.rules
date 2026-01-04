@@ -22,6 +22,11 @@ service cloud.firestore {
     match /staff/{consultant} {
       allow read, write: if true;
     }
+
+    // Projects
+    match /projects/{project} {
+      allow read, write: if true;
+    }
     
     // Default: deny access to all other collections
     match /{document=**} {
