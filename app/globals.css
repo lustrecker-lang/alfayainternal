@@ -8,11 +8,21 @@
     --foreground: 222.2 84% 4.9%;
     --radius: 0.25rem;
     /* Traditional 4px radius */
+
+    /* Toast colors for light mode */
+    --toast-bg: #ffffff;
+    --toast-text: #1f2937;
+    --toast-border: #e5e7eb;
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+
+    /* Toast colors for dark mode */
+    --toast-bg: #27272a;
+    --toast-text: #f4f4f5;
+    --toast-border: #3f3f46;
   }
 
   body {

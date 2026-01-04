@@ -9,6 +9,7 @@ import { BUSINESS_UNITS } from '@/config/units';
 import type { FinancialSummary } from '@/types/finance';
 import Link from 'next/link';
 import Image from 'next/image';
+import { showToast } from '@/lib/toast';
 
 interface HQDashboardProps {
     initialUnitId?: string;
@@ -70,7 +71,7 @@ export default function HQDashboard({
             );
         } catch (error) {
             console.error('Export failed:', error);
-            alert('Failed to export ledger. Please try again.');
+            showToast.error('Failed to export ledger. Please try again');
         } finally {
             setIsExporting(false);
         }

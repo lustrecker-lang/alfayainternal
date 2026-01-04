@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getConsultant, updateConsultant, deleteConsultant } from '@/lib/staff';
 import type { Consultant } from '@/types/staff';
+import { showToast } from '@/lib/toast';
 
 export default function ConsultantDetailClient() {
     const params = useParams();
@@ -65,10 +66,10 @@ export default function ConsultantDetailClient() {
                 bio: formData.bio,
                 joinedDate: new Date(formData.joinedDate),
             });
-            alert('Consultant updated successfully.');
+            showToast.success('Consultant updated successfully');
         } catch (error) {
             console.error('Error updating consultant:', error);
-            alert('Failed to update consultant.');
+            showToast.error('Failed to update consultant');
         } finally {
             setSaving(false);
         }
@@ -80,7 +81,7 @@ export default function ConsultantDetailClient() {
             router.push('/dashboard/afconsult/staff');
         } catch (error) {
             console.error('Error archiving consultant:', error);
-            alert('Failed to archive consultant.');
+            showToast.error('Failed to archive consultant');
         }
         setShowDeleteDialog(false);
     };

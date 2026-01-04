@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createConsultant } from '@/lib/staff';
 import type { NewConsultantData } from '@/types/staff';
+import { showToast } from '@/lib/toast';
 
 export default function NewConsultantPage() {
     const router = useRouter();
@@ -22,7 +23,7 @@ export default function NewConsultantPage() {
 
     const handleSave = async () => {
         if (!formData.name || !formData.rate) {
-            alert('Name and Rate are required.');
+            showToast.error('Name and Rate are required');
             return;
         }
 
@@ -44,7 +45,7 @@ export default function NewConsultantPage() {
             router.push('/dashboard/afconsult/staff');
         } catch (error) {
             console.error('Error saving consultant:', error);
-            alert('Failed to save consultant. Please try again.');
+            showToast.error('Failed to save consultant. Please try again');
         } finally {
             setSaving(false);
         }

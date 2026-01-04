@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getClientById, deleteClient, type ClientFull } from '@/lib/finance';
 import { useRouter } from 'next/navigation';
+import { showToast } from '@/lib/toast';
 
 export default function ImedaClientDetailPage() {
     const params = useParams();
@@ -43,7 +44,7 @@ export default function ImedaClientDetailPage() {
             router.push('/dashboard/imeda/clients');
         } catch (error) {
             console.error('Error deleting client:', error);
-            alert('Failed to delete client');
+            showToast.error('Failed to delete client');
         } finally {
             setDeleting(false);
         }

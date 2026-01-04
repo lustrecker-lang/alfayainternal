@@ -3,6 +3,7 @@ import { Unna, Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from 'react-hot-toast';
 
 const unna = Unna({
     subsets: ['latin'],
@@ -34,6 +35,33 @@ export default function RootLayout({
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
                     <AuthProvider>
                         {children}
+                        <Toaster
+                            position="bottom-right"
+                            toastOptions={{
+                                // Default options
+                                duration: 3000,
+                                style: {
+                                    background: 'var(--toast-bg)',
+                                    color: 'var(--toast-text)',
+                                    border: '1px solid var(--toast-border)',
+                                },
+                                // Success
+                                success: {
+                                    iconTheme: {
+                                        primary: '#10b981',
+                                        secondary: 'white',
+                                    },
+                                },
+                                // Error
+                                error: {
+                                    iconTheme: {
+                                        primary: '#ef4444',
+                                        secondary: 'white',
+                                    },
+                                    duration: 4000,
+                                },
+                            }}
+                        />
                     </AuthProvider>
                 </ThemeProvider>
             </body>
