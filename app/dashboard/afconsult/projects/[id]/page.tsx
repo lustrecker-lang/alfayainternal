@@ -1,50 +1,133 @@
 'use client';
 
-import { ArrowLeft, Save, Trash2, Clock, Calendar, User, Briefcase, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, use } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { getProject, updateProject, deleteProject } from '@/lib/project';
+import { getClients } from '@/lib/finance';
+import { showToast } from '@/lib/toast';
+import type { Project } from '@/types/project';
+import type { ClientBasic } from '@/types/finance';
 
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function ProjectDetailPage() {
+    const params = useParams();
+    const id = params.id as string;
+    const router = useRouter();
+
+    const [project, setProject] = useState<Project | null>(null);
+    const [clients, setClients] = useState<ClientBasic[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const [formData, setFormData] = useState({
-        name: 'Digital Transformation Strategy',
-        client: 'Global Industries',
-        lead: 'Consultant A',
-        status: 'In Progress',
-        startDate: '2026-01-02',
-        endDate: '2026-06-30',
-        description: 'Comprehensive digital transformation roadmap for the manufacturing division, including legacy system audit and cloud migration strategy.',
-        budget: '250,000.00',
-        currency: 'AED',
+        name: '',
+        clientId: '',
+        description: '',
     });
 
-    const handleSave = () => {
-        alert('Save functionality - would update project data');
+    useEffect(() => {
+        loadData();
+    }, [id]);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [projectData, clientsData] = await Promise.all([
+                getProject(id),
+                getClients('afconsult'),
+            ]);
+
+            if (projectData) {
+                setProject(projectData);
+                setFormData({
+                    name: projectData.name,
+                    clientId: projectData.clientId,
+                    description: projectData.description,
+                });
+            }
+            setClients(clientsData);
+        } catch (error) {
+            console.error('Error loading project:', error);
+            showToast.error('Failed to load project');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const confirmDelete = () => {
-        alert('Delete functionality - would archive project and redirect');
+    const handleSave = async () => {
+        if (!formData.name.trim()) {
+            showToast.error('Project name is required');
+            return;
+        }
+
+        if (!formData.clientId) {
+            showToast.error('Please select a client');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const selectedClient = clients.find(c => c.id === formData.clientId);
+
+            await updateProject(id, {
+                name: formData.name.trim(),
+                clientId: formData.clientId,
+                clientName: selectedClient?.name || '',
+                description: formData.description.trim(),
+            });
+
+            showToast.success('Project updated successfully');
+        } catch (error) {
+            console.error('Error updating project:', error);
+            showToast.error('Failed to update project');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await deleteProject(id);
+            showToast.success('Project archived successfully');
+            router.push('/dashboard/afconsult/projects');
+        } catch (error) {
+            console.error('Error archiving project:', error);
+            showToast.error('Failed to archive project');
+        }
         setShowDeleteDialog(false);
     };
 
+    if (loading) {
+        return <div className="p-12 text-center text-gray-500 font-sans">Loading project...</div>;
+    }
+
+    if (!project) {
+        return (
+            <div className="space-y-6">
+                <Link href="/dashboard/afconsult/projects">
+                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" style={{ borderRadius: '0.25rem' }}>
+                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                </Link>
+                <div className="text-center py-12 text-gray-500 font-sans">
+                    Project not found.
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
-            {/* Header with Back, Centered Title, and Actions */}
+            {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/dashboard/afconsult/projects">
-                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" style={{ borderRadius: '0.25rem' }}>
-                            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                        </button>
-                    </Link>
-                </div>
-
-                <h1 className="text-3xl text-gray-900 dark:text-white absolute left-1/2 -translate-x-1/2">
-                    Project Details
-                </h1>
-
+                <Link href="/dashboard/afconsult/projects">
+                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" style={{ borderRadius: '0.25rem' }}>
+                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                </Link>
+                <h1 className="text-3xl text-gray-900 dark:text-white absolute left-1/2 -translate-x-1/2">Project Details</h1>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setShowDeleteDialog(true)}
@@ -56,199 +139,64 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     </button>
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans disabled:opacity-50"
                         style={{ borderRadius: '0.25rem' }}
                     >
-                        <Save className="w-4 h-4" />
-                        Save
+                        {saving ? 'Saving...' : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content - Always Editable Form */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <form className="space-y-8">
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Basic Information</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Project Name</label>
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Client</label>
-                                        <select
-                                            value={formData.client}
-                                            onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        >
-                                            <option value="Global Industries">Global Industries</option>
-                                            <option value="Tech Solutions">Tech Solutions</option>
-                                            <option value="Green Energy Ltd">Green Energy Ltd</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Project Lead</label>
-                                        <select
-                                            value={formData.lead}
-                                            onChange={(e) => setFormData({ ...formData, lead: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        >
-                                            <option value="Consultant A">Consultant A</option>
-                                            <option value="Consultant B">Consultant B</option>
-                                            <option value="Consultant C">Consultant C</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Status</label>
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        >
-                                            <option value="Planning">Planning</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="On Hold">On Hold</option>
-                                            <option value="Completed">Completed</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Budget ({formData.currency})</label>
-                                        <input
-                                            type="text"
-                                            value={formData.budget}
-                                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Timing & Schedule</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Start Date</label>
-                                        <input
-                                            type="date"
-                                            value={formData.startDate}
-                                            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Estimated End Date</label>
-                                        <input
-                                            type="date"
-                                            value={formData.endDate}
-                                            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Project Description</h3>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={5}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none resize-none font-sans"
-                                    style={{ borderRadius: '0.25rem' }}
-                                />
-                            </div>
-                        </form>
+            {/* Form */}
+            <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6 max-w-2xl">
+                    <div>
+                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Project Name *</label>
+                        <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                            style={{ borderRadius: '0.25rem' }}
+                            required
+                        />
                     </div>
 
-                    {/* Milestones / Recent Updates */}
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Key Milestones</h3>
-                            <button className="text-xs font-normal text-afconsult hover:underline font-sans uppercase">Add Milestone</button>
-                        </div>
-                        <div className="space-y-4">
-                            {[
-                                { name: 'Initial Research & Audit', date: 'Feb 15, 2026', completed: true },
-                                { name: 'Cloud Migration Strategy', date: 'Mar 20, 2026', completed: false },
-                                { name: 'Legacy System Integration', date: 'Apr 10, 2026', completed: false },
-                            ].map((milestone, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 border border-gray-50 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50" style={{ borderRadius: '0.25rem' }}>
-                                    <div className="flex items-center gap-3">
-                                        {milestone.completed ? (
-                                            <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                        ) : (
-                                            <Clock className="w-5 h-5 text-gray-400" />
-                                        )}
-                                        <div>
-                                            <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{milestone.name}</p>
-                                            <p className="text-[10px] text-gray-500 font-sans uppercase tracking-wider">Due: {milestone.date}</p>
-                                        </div>
-                                    </div>
-                                    <button className="text-[10px] font-normal text-gray-400 hover:text-afconsult transition-colors font-sans uppercase">Edit</button>
-                                </div>
+                    <div>
+                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Client *</label>
+                        <select
+                            value={formData.clientId}
+                            onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                            style={{ borderRadius: '0.25rem' }}
+                            required
+                        >
+                            <option value="">Select a client...</option>
+                            {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                    {client.name}
+                                </option>
                             ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar - Summary & Team */}
-                <div className="space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Project Summary</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <User className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Project Lead</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.lead}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Briefcase className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Client Partner</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.client}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Calendar className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Timeline</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">Jan - Jun 2026</p>
-                                </div>
-                            </div>
-                        </div>
+                        </select>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Recent Documents</h3>
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3 group cursor-pointer">
-                                <FileText className="w-4 h-4 text-gray-400 group-hover:text-afconsult transition-colors" />
-                                <span className="text-xs text-gray-600 dark:text-gray-400 font-sans group-hover:text-afconsult transition-colors">Phase 1 Proposal.pdf</span>
-                            </div>
-                            <div className="flex items-center gap-3 group cursor-pointer">
-                                <FileText className="w-4 h-4 text-gray-400 group-hover:text-afconsult transition-colors" />
-                                <span className="text-xs text-gray-600 dark:text-gray-400 font-sans group-hover:text-afconsult transition-colors">Integration Spec v2.docx</span>
-                            </div>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Description</label>
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            rows={6}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none resize-none font-sans"
+                            style={{ borderRadius: '0.25rem' }}
+                        />
                     </div>
-                </div>
+                </form>
             </div>
 
             {/* Delete Confirmation Dialog */}
@@ -259,7 +207,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
                             <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Archive Project?</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
-                                Are you sure you want to archive this project? This will move it to the historical archive.
+                                Are you sure you want to archive {formData.name}? This will remove it from the active projects list.
                             </p>
                             <div className="flex gap-3">
                                 <button
