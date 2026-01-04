@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { addClientFull } from '@/lib/finance';
+import { showToast } from '@/lib/toast';
 
 export default function NewClientPage() {
     const router = useRouter();
@@ -28,6 +29,7 @@ export default function NewClientPage() {
         e.preventDefault();
         if (!formData.name.trim()) {
             setError('Company name is required');
+            showToast.error('Company name is required');
             return;
         }
 
@@ -51,10 +53,12 @@ export default function NewClientPage() {
                 },
             });
 
+            showToast.success('Client created successfully');
             router.push('/dashboard/afconsult/clients');
         } catch (err) {
             console.error('Error creating client:', err);
             setError('Failed to create client. Please try again.');
+            showToast.error('Failed to create client. Please try again');
         } finally {
             setIsSubmitting(false);
         }
