@@ -1,35 +1,121 @@
 'use client';
 
-import { ArrowLeft, Save, Trash2, MapPin, Phone, Mail, FileText, Upload, Globe, Building2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, use } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { getClientById, updateClient, deleteClient, type ClientFull } from '@/lib/finance';
+import { showToast } from '@/lib/toast';
 
-export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function ClientDetailPage() {
+    const params = useParams();
+    const id = params.id as string;
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [client, setClient] = useState<ClientFull | null>(null);
 
     const [formData, setFormData] = useState({
-        name: 'Global Industries',
-        industry: 'Manufacturing',
-        website: 'www.globalindustries.com',
-        email: 'contact@global.com',
-        phone: '+971 4 000 0000',
-        contactPerson: 'John Smith',
-        street_line1: '123 Business Bay',
-        street_line2: 'Suite 405',
-        city: 'Dubai',
-        zip_code: '00000',
-        country: 'UAE',
+        name: '',
+        industry: '',
+        contact: '',
+        email: '',
+        phone: '',
+        street_line1: '',
+        street_line2: '',
+        city: '',
+        zip_code: '',
+        country: '',
     });
 
-    const handleSave = () => {
-        alert('Save functionality - would update client data');
+    useEffect(() => {
+        loadClient();
+    }, [id]);
+
+    const loadClient = async () => {
+        try {
+            setLoading(true);
+            const data = await getClientById(id);
+            if (data) {
+                setClient(data);
+                setFormData({
+                    name: data.name || '',
+                    industry: (data as any).industry || '',
+                    contact: data.contact || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    street_line1: data.address?.street_line1 || '',
+                    street_line2: data.address?.street_line2 || '',
+                    city: data.address?.city || '',
+                    zip_code: data.address?.zip_code || '',
+                    country: data.address?.country || '',
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load client:', error);
+            showToast.error('Failed to load client');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const confirmDelete = () => {
-        alert('Delete functionality - would archive client and redirect');
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateClient(id, {
+                name: formData.name,
+                industry: formData.industry || undefined,
+                contact: formData.contact || undefined,
+                email: formData.email || undefined,
+                phone: formData.phone || undefined,
+                address: {
+                    street_line1: formData.street_line1 || undefined,
+                    street_line2: formData.street_line2 || undefined,
+                    city: formData.city || undefined,
+                    zip_code: formData.zip_code || undefined,
+                    country: formData.country || undefined,
+                },
+            });
+            showToast.success('Client updated successfully');
+        } catch (error) {
+            console.error('Error updating client:', error);
+            showToast.error('Failed to update client');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await deleteClient(id);
+            showToast.success('Client archived successfully');
+            router.push('/dashboard/afconsult/clients');
+        } catch (error) {
+            console.error('Error archiving client:', error);
+            showToast.error('Failed to archive client');
+        }
         setShowDeleteDialog(false);
     };
+
+    if (loading) {
+        return <div className="p-12 text-center text-gray-500 font-sans">Loading client details...</div>;
+    }
+
+    if (!client) {
+        return (
+            <div className="space-y-6">
+                <Link href="/dashboard/afconsult/clients">
+                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" style={{ borderRadius: '0.25rem' }}>
+                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                </Link>
+                <div className="text-center py-12 text-gray-500 font-sans">
+                    Client not found.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -52,202 +138,142 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                         onClick={() => setShowDeleteDialog(true)}
                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         style={{ borderRadius: '0.25rem' }}
-                        title="Delete Client"
+                        title="Archive Client"
                     >
                         <Trash2 className="w-5 h-5" />
                     </button>
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 bg-afconsult text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans disabled:opacity-50"
                         style={{ borderRadius: '0.25rem' }}
                     >
-                        <Save className="w-4 h-4" />
-                        Save
+                        {saving ? 'Saving...' : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content - Always Editable Form */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <form className="space-y-8">
-                            {/* Company Section */}
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Company Information</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Company Name</label>
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Industry</label>
-                                        <input
-                                            type="text"
-                                            value={formData.industry}
-                                            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Website</label>
-                                        <input
-                                            type="text"
-                                            value={formData.website}
-                                            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Primary Contact Person</label>
-                                        <input
-                                            type="text"
-                                            value={formData.contactPerson}
-                                            onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                </div>
+            <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
+                <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+                    {/* Company Section */}
+                    <div className="space-y-6">
+                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Company Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Company Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
                             </div>
-
-                            {/* Address Section */}
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Address Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Street Address Line 1</label>
-                                        <input
-                                            type="text"
-                                            value={formData.street_line1}
-                                            onChange={(e) => setFormData({ ...formData, street_line1: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Street Address Line 2</label>
-                                        <input
-                                            type="text"
-                                            value={formData.street_line2}
-                                            onChange={(e) => setFormData({ ...formData, street_line2: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">City</label>
-                                        <input
-                                            type="text"
-                                            value={formData.city}
-                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">ZIP / Postal Code</label>
-                                        <input
-                                            type="text"
-                                            value={formData.zip_code}
-                                            onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Country</label>
-                                        <input
-                                            type="text"
-                                            value={formData.country}
-                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
-                                            style={{ borderRadius: '0.25rem' }}
-                                        />
-                                    </div>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Industry</label>
+                                <input
+                                    type="text"
+                                    value={formData.industry}
+                                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
                             </div>
-                        </form>
-                    </div>
-
-                    {/* Contracts & Documents */}
-                    <div className="bg-white dark:bg-zinc-800 p-8 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans">Contracts & Documents</h3>
-                            <button className="flex items-center gap-2 px-3 py-1.5 border border-afconsult text-afconsult hover:bg-afconsult hover:text-white transition-all text-xs font-medium font-sans" style={{ borderRadius: '0.25rem' }}>
-                                <Upload className="w-3.5 h-3.5" />
-                                Upload Document
-                            </button>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="p-4 border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 flex items-center justify-between group" style={{ borderRadius: '0.25rem' }}>
-                                <div className="flex items-center gap-3">
-                                    <FileText className="w-5 h-5 text-gray-400" />
-                                    <div>
-                                        <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">Master Services Agreement (MSA)</p>
-                                        <p className="text-[10px] text-gray-500 font-sans uppercase tracking-wider">DEC 12, 2025 • 1.2 MB</p>
-                                    </div>
-                                </div>
-                                <button className="text-xs font-normal text-afconsult hover:underline font-sans uppercase">View</button>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Contact Person</label>
+                                <input
+                                    type="text"
+                                    value={formData.contact}
+                                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
                             </div>
-                            <div className="p-4 border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 flex items-center justify-between group" style={{ borderRadius: '0.25rem' }}>
-                                <div className="flex items-center gap-3">
-                                    <FileText className="w-5 h-5 text-gray-400" />
-                                    <div>
-                                        <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">Service Order #4122</p>
-                                        <p className="text-[10px] text-gray-500 font-sans uppercase tracking-wider">JAN 02, 2026 • 450 KB</p>
-                                    </div>
-                                </div>
-                                <button className="text-xs font-normal text-afconsult hover:underline font-sans uppercase">View</button>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Email</label>
+                                <input
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar - Quick Actions & Stats */}
-                <div className="space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Quick Stats</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Building2 className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Industry</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans">{formData.industry}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Globe className="w-4 h-4 text-gray-400" />
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-sans">Website</p>
-                                    <p className="text-sm font-normal text-gray-900 dark:text-white font-sans truncate">{formData.website}</p>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Phone</label>
+                                <input
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans mb-4">Quick Communication</h3>
-                        <div className="space-y-3">
-                            <button className="w-full py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-sans text-sm" style={{ borderRadius: '0.25rem' }}>
-                                <Mail className="w-4 h-4" />
-                                Send Email
-                            </button>
-                            <button className="w-full py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-normal hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-sans text-sm" style={{ borderRadius: '0.25rem' }}>
-                                <Phone className="w-4 h-4" />
-                                Call Client
-                            </button>
+                    {/* Address Section */}
+                    <div className="space-y-6">
+                        <h3 className="text-sm font-normal uppercase tracking-wider text-afconsult font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">Address Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Street Address Line 1</label>
+                                <input
+                                    type="text"
+                                    value={formData.street_line1}
+                                    onChange={(e) => setFormData({ ...formData, street_line1: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Street Address Line 2</label>
+                                <input
+                                    type="text"
+                                    value={formData.street_line2}
+                                    onChange={(e) => setFormData({ ...formData, street_line2: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">City</label>
+                                <input
+                                    type="text"
+                                    value={formData.city}
+                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">ZIP / Postal Code</label>
+                                <input
+                                    type="text"
+                                    value={formData.zip_code}
+                                    onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-2 font-sans">Country</label>
+                                <input
+                                    type="text"
+                                    value={formData.country}
+                                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-afconsult outline-none"
+                                    style={{ borderRadius: '0.25rem' }}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
 
             {/* Delete Confirmation Dialog */}
@@ -258,7 +284,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                         <div className="bg-white dark:bg-zinc-800 p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
                             <h3 className="text-lg font-normal text-gray-900 dark:text-white mb-2">Archive Client?</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-sans">
-                                Are you sure you want to archive this client? This will move them to the inactive directory.
+                                Are you sure you want to archive {formData.name}? This will move them to the inactive directory.
                             </p>
                             <div className="flex gap-3">
                                 <button
