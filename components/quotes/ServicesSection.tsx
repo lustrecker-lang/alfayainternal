@@ -42,7 +42,6 @@ export default function ServicesSection({
                     description: s.description,
                     timeBasis: mapTimeUnit(s.timeUnit),
                     costPrice: Object.values(s.campusCosts || {})[0] || 0, // Use first campus cost as default
-                    sellingPrice: Object.values(s.campusCosts || {})[0] * 1.3 || 0, // 30% markup default
                     enabled: s.type === 'Default Service',
                     imageUrl: s.imageUrl,
                 }));
@@ -83,10 +82,9 @@ export default function ServicesSection({
         }
     };
 
-    const calculateSubtotal = (service: QuoteService, isCost: boolean): number => {
+    const calculateSubtotal = (service: QuoteService): number => {
         if (!service.enabled) return 0;
-        const price = isCost ? service.costPrice : service.sellingPrice;
-        return price * calculateMultiplier(service.timeBasis) * participants;
+        return service.costPrice * calculateMultiplier(service.timeBasis) * participants;
     };
 
     const toggleService = (serviceId: string) => {
@@ -135,17 +133,14 @@ export default function ServicesSection({
             ) : (
                 <div className="space-y-3">
                     {services.map((service) => {
-                        const costSubtotal = calculateSubtotal(service, true);
-                        const revenueSubtotal = calculateSubtotal(service, false);
-                        const margin = revenueSubtotal - costSubtotal;
-                        const marginPercent = revenueSubtotal > 0 ? (margin / revenueSubtotal) * 100 : 0;
+                        const costSubtotal = calculateSubtotal(service);
 
                         return (
                             <div
                                 key={service.serviceId}
                                 className={`p-4 border transition-all ${service.enabled
-                                        ? 'border-imeda/50 bg-imeda/5 dark:bg-imeda/10'
-                                        : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-zinc-900'
+                                    ? 'border-imeda/50 bg-imeda/5 dark:bg-imeda/10'
+                                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-zinc-900'
                                     }`}
                                 style={{ borderRadius: '0.25rem' }}
                             >
@@ -197,38 +192,14 @@ export default function ServicesSection({
                                                     style={{ borderRadius: '0.25rem' }}
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                                                    Selling Price (AED)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    value={service.sellingPrice}
-                                                    onChange={(e) => updateService(service.serviceId, { sellingPrice: parseFloat(e.target.value) || 0 })}
-                                                    disabled={!service.enabled}
-                                                    className="w-full px-2 py-1.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda text-sm disabled:opacity-50"
-                                                    style={{ borderRadius: '0.25rem' }}
-                                                />
-                                            </div>
                                         </div>
 
                                         {/* Subtotals */}
                                         {service.enabled && (
                                             <div className="flex items-center justify-between text-xs">
-                                                <div className="flex gap-4">
-                                                    <span className="text-gray-500">
-                                                        Cost: <span className="font-medium text-gray-900 dark:text-white">AED {costSubtotal.toFixed(2)}</span>
-                                                    </span>
-                                                    <span className="text-gray-500">
-                                                        Revenue: <span className="font-medium text-gray-900 dark:text-white">AED {revenueSubtotal.toFixed(2)}</span>
-                                                    </span>
-                                                </div>
-                                                <div className={`flex items-center gap-1 font-medium ${margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                    {margin >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                                    {marginPercent.toFixed(1)}% margin
-                                                </div>
+                                                <span className="text-gray-500">
+                                                    Total Cost: <span className="font-medium text-gray-900 dark:text-white">AED {costSubtotal.toFixed(2)}</span>
+                                                </span>
                                             </div>
                                         )}
                                     </div>

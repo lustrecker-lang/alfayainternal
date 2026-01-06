@@ -232,9 +232,8 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
 
             if (onClose) {
                 onClose();
-            } else {
-                router.push('/dashboard/imeda/quotes');
             }
+            // Stay on page after saving - no redirect
         } catch (error) {
             console.error('Error saving quote:', error);
             showToast.error('Failed to save quote');
@@ -427,8 +426,8 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                                         key={curr}
                                         onClick={() => setPreviewCurrency(curr as any)}
                                         className={`px-3 py-1 text-xs font-medium rounded transition-all ${previewCurrency === curr
-                                                ? 'bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-white font-bold shadow-sm'
-                                                : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                                            ? 'bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-white font-bold shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800'
                                             }`}
                                     >
                                         {curr}

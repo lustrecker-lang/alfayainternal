@@ -253,14 +253,28 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
 
 // === CAMPUS TYPES ===
 
+export interface CampusOffice {
+    id: string;
+    name: string;           // e.g., "Main Office", "Admissions Office"
+    street: string;
+    city: string;
+    state?: string;         // State/Province/Region
+    postalCode?: string;
+    country: string;
+    phone?: string;
+    email?: string;
+    googleMapsLink?: string;
+}
+
 export interface Campus {
     id: string;
     name: string;
     country: string;
-    address: string;
+    address: string;        // Legacy field - kept for backward compatibility
     googleMapsLink?: string;
     imageUrl?: string;
     directorId?: string;
+    offices?: CampusOffice[];  // New: Multiple offices per campus
     createdAt: Date;
     updatedAt?: Date;
 }

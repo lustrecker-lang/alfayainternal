@@ -73,6 +73,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Seminars collection (for IMEDA seminars)
+    match /seminars/{seminarId} {
+      allow read, write: if true;
+    }
+
     // ============================================================
     // USER DATA
     // ============================================================

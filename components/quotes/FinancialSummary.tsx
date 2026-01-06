@@ -13,7 +13,7 @@ export default function FinancialSummary({ summary }: FinancialSummaryProps) {
         return `AED ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const isPositiveMargin = summary.netMargin >= 0;
+    const isPositiveMargin = summary.netProfit >= 0;
 
     return (
         <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-zinc-800 border-t-2 border-imeda shadow-lg">
@@ -74,8 +74,8 @@ export default function FinancialSummary({ summary }: FinancialSummaryProps) {
                     {/* Net Margin */}
                     <div
                         className={`text-center p-3 ${isPositiveMargin
-                                ? 'bg-imeda/10 border-2 border-imeda'
-                                : 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500'
+                            ? 'bg-imeda/10 border-2 border-imeda'
+                            : 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500'
                             }`}
                         style={{ borderRadius: '0.25rem' }}
                     >
@@ -84,11 +84,11 @@ export default function FinancialSummary({ summary }: FinancialSummaryProps) {
                             Net Margin
                         </div>
                         <div className={`text-lg font-bold ${isPositiveMargin ? 'text-imeda' : 'text-red-600 dark:text-red-400'}`}>
-                            {formatCurrency(summary.netMargin)}
+                            {formatCurrency(summary.netProfit)}
                         </div>
                         <div className={`text-xs font-medium mt-1 flex items-center justify-center gap-1 ${isPositiveMargin ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {isPositiveMargin ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                            {summary.marginPercentage.toFixed(1)}%
+                            {summary.profitMarginPercentage.toFixed(1)}%
                         </div>
                     </div>
                 </div>
@@ -97,7 +97,7 @@ export default function FinancialSummary({ summary }: FinancialSummaryProps) {
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                     <div className="flex justify-between px-3 py-2 bg-gray-50 dark:bg-zinc-900" style={{ borderRadius: '0.25rem' }}>
                         <span className="text-gray-500 dark:text-gray-400">Service Revenue:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(summary.serviceRevenue)}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(summary.totalRevenue)}</span>
                     </div>
                     <div className="flex justify-between px-3 py-2 bg-gray-50 dark:bg-zinc-900" style={{ borderRadius: '0.25rem' }}>
                         <span className="text-gray-500 dark:text-gray-400">Total Internal Cost:</span>

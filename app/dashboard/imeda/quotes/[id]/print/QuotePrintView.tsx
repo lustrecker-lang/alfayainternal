@@ -39,6 +39,10 @@ const translations = {
         pricePerPerson: 'Price per person',
         thankYou: 'Thank you for considering IMEDA',
         license: 'License',
+        euroConversionWarning: 'For payments in Euro, our bank charges an extra 3% conversion fee on top of the final price.',
+        conversionFee: 'Bank Conversion Fee (3%)',
+        totalWithFee: 'Total incl. Fee',
+        alsoAvailableIn: 'Also available in:',
     },
     fr: {
         quotation: 'DEVIS',
@@ -64,6 +68,10 @@ const translations = {
         pricePerPerson: 'Prix par personne',
         thankYou: 'Merci de considérer IMEDA',
         license: 'Licence',
+        euroConversionWarning: 'Pour les paiements en Euro, notre banque applique des frais de conversion de 3% en sus du prix final.',
+        conversionFee: 'Frais de conversion bancaire (3%)',
+        totalWithFee: 'Total frais inclus',
+        alsoAvailableIn: 'Également disponible en :',
     }
 };
 
@@ -379,28 +387,51 @@ export default function QuotePrintView() {
                                     <span className="text-gray-500">Total ({quote.participantCount} {t.pax})</span>
                                     <span className="font-medium text-gray-800">{formatCurrency(totalRevenue)}</span>
                                 </div>
+
+                                {/* EUR Conversion Fee Breakdown */}
+                                {currency === 'EUR' && (
+                                    <>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-gray-500">{t.conversionFee}</span>
+                                            <span className="font-medium text-gray-800">{formatCurrency(totalRevenue * 0.03)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[11px] font-semibold">
+                                            <span className="text-gray-700">{t.totalWithFee}</span>
+                                            <span className="text-gray-900">{formatCurrency(totalRevenue * 1.03)}</span>
+                                        </div>
+                                    </>
+                                )}
+
                                 <div className="pt-2 border-t-2" style={{ borderColor: brandColor }}>
                                     <div className="flex justify-between items-center">
                                         <span className="text-gray-700 text-xs font-medium">{t.pricePerPerson}</span>
-                                        <span className="text-xl font-bold" style={{ color: brandColor }}>{formatCurrency(quote.manualSellingPricePerParticipant)}</span>
+                                        <span className="text-xl font-bold" style={{ color: brandColor }}>
+                                            {currency === 'EUR'
+                                                ? formatCurrency(quote.manualSellingPricePerParticipant * 1.03)
+                                                : formatCurrency(quote.manualSellingPricePerParticipant)
+                                            }
+                                        </span>
                                     </div>
-                                    {/* Secondary currencies */}
-                                    <div className="flex justify-end gap-3 mt-1">
-                                        {currency !== 'AED' && (
-                                            <span className="text-[10px] text-gray-400">
-                                                AED {quote.manualSellingPricePerParticipant.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                                            </span>
-                                        )}
-                                        {currency !== 'USD' && (
-                                            <span className="text-[10px] text-gray-400">
-                                                USD {(quote.manualSellingPricePerParticipant * 0.27).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                                            </span>
-                                        )}
-                                        {currency !== 'EUR' && (
-                                            <span className="text-[10px] text-gray-400">
-                                                EUR {(quote.manualSellingPricePerParticipant * 0.230).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                                            </span>
-                                        )}
+                                    {/* Alternative currencies */}
+                                    <div className="mt-2 pt-2 border-t border-gray-100">
+                                        <p className="text-[9px] text-gray-400 mb-1">{t.alsoAvailableIn}</p>
+                                        <div className="flex flex-col gap-0.5">
+                                            {currency !== 'AED' && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    AED {quote.manualSellingPricePerParticipant.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                                </span>
+                                            )}
+                                            {currency !== 'USD' && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    USD {(quote.manualSellingPricePerParticipant * 0.27).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                                </span>
+                                            )}
+                                            {currency !== 'EUR' && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    EUR {(quote.manualSellingPricePerParticipant * 0.230).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

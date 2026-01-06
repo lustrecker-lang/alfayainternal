@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, MapPin, Link as LinkIcon, Upload, ImageIcon, User } from 'lucide-react';
+import { X, Save, MapPin, Link as LinkIcon, Upload, ImageIcon, User, Plus, Trash2, Building2, Phone, Mail } from 'lucide-react';
 import CountrySelect from '@/components/ui/CountrySelect';
-import type { Campus } from '@/types/finance';
+import type { Campus, CampusOffice } from '@/types/finance';
 import type { Consultant } from '@/types/staff';
 import { addCampus, updateCampus } from '@/lib/campuses';
 import { getConsultants } from '@/lib/staff';
@@ -28,6 +28,7 @@ export default function CampusEditor({
     const [staff, setStaff] = useState<Consultant[]>([]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [offices, setOffices] = useState<CampusOffice[]>([]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -36,6 +37,19 @@ export default function CampusEditor({
         googleMapsLink: '',
         directorId: '',
         imageUrl: '',
+    });
+
+    const createEmptyOffice = (): CampusOffice => ({
+        id: crypto.randomUUID(),
+        name: '',
+        street: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: '',
+        phone: '',
+        email: '',
+        googleMapsLink: '',
     });
 
     useEffect(() => {
@@ -51,6 +65,7 @@ export default function CampusEditor({
                     imageUrl: campus.imageUrl || '',
                 });
                 setImagePreview(campus.imageUrl || null);
+                setOffices(campus.offices || []);
             } else {
                 setFormData({
                     name: '',
@@ -61,6 +76,7 @@ export default function CampusEditor({
                     imageUrl: '',
                 });
                 setImagePreview(null);
+                setOffices([]);
             }
             setImageFile(null);
         }
@@ -115,6 +131,7 @@ export default function CampusEditor({
             const payload = {
                 ...formData,
                 imageUrl: finalImageUrl,
+                offices: offices.filter(o => o.name.trim() || o.street.trim()), // Only save offices with data
             };
 
             if (campus) {
@@ -246,37 +263,203 @@ export default function CampusEditor({
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-sans">
-                                    Office Address
-                                </label>
-                                <textarea
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda transition-all font-sans text-sm min-h-[80px]"
-                                    style={{ borderRadius: '0.25rem' }}
-                                    placeholder="Full office address and room numbers"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-sans">
-                                    Google Maps Link (Optional)
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                        <LinkIcon className="w-4 h-4" />
-                                    </div>
-                                    <input
-                                        type="url"
-                                        value={formData.googleMapsLink}
-                                        onChange={(e) => setFormData({ ...formData, googleMapsLink: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda transition-all font-sans text-sm"
-                                        style={{ borderRadius: '0.25rem' }}
-                                        placeholder="https://goo.gl/maps/..."
-                                    />
+                            {/* Offices Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider font-sans">
+                                        Offices
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOffices([...offices, createEmptyOffice()])}
+                                        className="flex items-center gap-1 text-xs text-imeda hover:text-imeda/80 transition-colors font-medium"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        Add Office
+                                    </button>
                                 </div>
+
+                                {offices.length === 0 ? (
+                                    <div className="text-center py-8 bg-gray-50 dark:bg-zinc-900 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-sm text-gray-400">No offices added yet</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setOffices([createEmptyOffice()])}
+                                            className="mt-2 text-xs text-imeda hover:underline"
+                                        >
+                                            Add your first office
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {offices.map((office, index) => (
+                                            <div
+                                                key={office.id}
+                                                className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded-lg space-y-4"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-medium text-gray-500">Office {index + 1}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOffices(offices.filter(o => o.id !== office.id))}
+                                                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Office Name */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Office Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={office.name}
+                                                        onChange={(e) => {
+                                                            const updated = [...offices];
+                                                            updated[index] = { ...office, name: e.target.value };
+                                                            setOffices(updated);
+                                                        }}
+                                                        className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                        placeholder="e.g. Main Office, Admissions"
+                                                    />
+                                                </div>
+
+                                                {/* Street Address */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Street Address</label>
+                                                    <input
+                                                        type="text"
+                                                        value={office.street}
+                                                        onChange={(e) => {
+                                                            const updated = [...offices];
+                                                            updated[index] = { ...office, street: e.target.value };
+                                                            setOffices(updated);
+                                                        }}
+                                                        className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                        placeholder="123 Main Street, Suite 100"
+                                                    />
+                                                </div>
+
+                                                {/* City, State, Postal */}
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">City</label>
+                                                        <input
+                                                            type="text"
+                                                            value={office.city}
+                                                            onChange={(e) => {
+                                                                const updated = [...offices];
+                                                                updated[index] = { ...office, city: e.target.value };
+                                                                setOffices(updated);
+                                                            }}
+                                                            className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                            placeholder="London"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">State/Province</label>
+                                                        <input
+                                                            type="text"
+                                                            value={office.state || ''}
+                                                            onChange={(e) => {
+                                                                const updated = [...offices];
+                                                                updated[index] = { ...office, state: e.target.value };
+                                                                setOffices(updated);
+                                                            }}
+                                                            className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                            placeholder="Greater London"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Postal Code</label>
+                                                        <input
+                                                            type="text"
+                                                            value={office.postalCode || ''}
+                                                            onChange={(e) => {
+                                                                const updated = [...offices];
+                                                                updated[index] = { ...office, postalCode: e.target.value };
+                                                                setOffices(updated);
+                                                            }}
+                                                            className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                            placeholder="SW1A 1AA"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Country */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Country</label>
+                                                    <CountrySelect
+                                                        value={office.country}
+                                                        onChange={(val) => {
+                                                            const updated = [...offices];
+                                                            updated[index] = { ...office, country: val };
+                                                            setOffices(updated);
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                {/* Phone & Email */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Phone</label>
+                                                        <div className="relative">
+                                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                            <input
+                                                                type="tel"
+                                                                value={office.phone || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...offices];
+                                                                    updated[index] = { ...office, phone: e.target.value };
+                                                                    setOffices(updated);
+                                                                }}
+                                                                className="w-full pl-10 pr-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                                placeholder="+44 20 1234 5678"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Email</label>
+                                                        <div className="relative">
+                                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                            <input
+                                                                type="email"
+                                                                value={office.email || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...offices];
+                                                                    updated[index] = { ...office, email: e.target.value };
+                                                                    setOffices(updated);
+                                                                }}
+                                                                className="w-full pl-10 pr-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                                placeholder="office@example.com"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Google Maps Link */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Google Maps Link</label>
+                                                    <div className="relative">
+                                                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                        <input
+                                                            type="url"
+                                                            value={office.googleMapsLink || ''}
+                                                            onChange={(e) => {
+                                                                const updated = [...offices];
+                                                                updated[index] = { ...office, googleMapsLink: e.target.value };
+                                                                setOffices(updated);
+                                                            }}
+                                                            className="w-full pl-10 pr-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                            placeholder="https://goo.gl/maps/..."
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </form>
                     </div>
