@@ -83,16 +83,10 @@ export default function ServicesPage() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                <div>
-                    <h1 className="text-2xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                        <Layers className="w-6 h-6 text-imeda" />
-                        Services
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage services offered during seminars. Drag to reorder.
-                    </p>
-                </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h1 className="text-3xl text-gray-900 dark:text-white">
+                    Services
+                </h1>
                 <button
                     onClick={() => {
                         setSelectedService(null);
@@ -196,8 +190,8 @@ export default function ServicesPage() {
                                     </td>
                                     <td className="py-3 px-4">
                                         <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded ${service.type === 'Default Service'
-                                                ? 'bg-imeda/10 text-imeda'
-                                                : 'bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-gray-300'
+                                            ? 'bg-imeda/10 text-imeda'
+                                            : 'bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-gray-300'
                                             }`}>
                                             {service.type === 'Default Service' ? 'Default' : 'Optional'}
                                         </span>

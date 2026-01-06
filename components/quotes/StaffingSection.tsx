@@ -19,6 +19,7 @@ interface StaffingSectionProps {
     onAddCoordinator: (coordinator: Coordinator) => void;
     onRemoveCoordinator: (id: string) => void;
     onUpdateCoordinator: (id: string, updates: Partial<Coordinator>) => void;
+    activeWorkdaysCount: number;
     isOpen: boolean;
     onToggle: () => void;
 }
@@ -34,6 +35,7 @@ export default function StaffingSection({
     onAddCoordinator,
     onRemoveCoordinator,
     onUpdateCoordinator,
+    activeWorkdaysCount,
     isOpen,
     onToggle,
 }: StaffingSectionProps) {
@@ -131,16 +133,23 @@ export default function StaffingSection({
                         <label className="text-xs text-gray-500 dark:text-gray-400">
                             Teaching Hours/Day:
                         </label>
-                        <input
-                            type="number"
-                            min="0.5"
-                            max="24"
-                            step="0.5"
-                            value={standardTeachingHours}
-                            onChange={(e) => onTeachingHoursChange(Math.max(0.5, parseFloat(e.target.value) || 6))}
-                            className="w-16 px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda text-sm text-center"
-                            style={{ borderRadius: '0.25rem' }}
-                        />
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                min="0.5"
+                                max="24"
+                                step="0.5"
+                                value={standardTeachingHours}
+                                onChange={(e) => onTeachingHoursChange(Math.max(0.5, parseFloat(e.target.value) || 6))}
+                                className="w-16 px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda text-sm text-center"
+                                style={{ borderRadius: '0.25rem' }}
+                            />
+                            {activeWorkdaysCount > 0 && (
+                                <span className="text-xs text-gray-400">
+                                    (Total: {standardTeachingHours * activeWorkdaysCount}h)
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Teachers */}

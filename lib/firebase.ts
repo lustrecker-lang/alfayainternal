@@ -18,6 +18,12 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 
 // Initialize services
 export const db = getFirestore(app);
+
+// Debug logging
+if (!db) {
+    console.error('[Firebase] Failed to initialize Firestore db', { app });
+}
+
 export const storage = getStorage(app);
 
 export default app;

@@ -1,16 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import GlobalSettings from './GlobalSettings';
 import StaffingSection from './StaffingSection';
 import SimpleServicesSection from './SimpleServicesSection';
+import ShareQuoteModal from './ShareQuoteModal';
 import { calculateQuoteSummary } from '@/lib/quoteCalculations';
 import { saveQuote } from '@/lib/quotes';
 import { getClients, type ClientFull } from '@/lib/finance';
+import { getServices } from '@/lib/services';
+import { getCampuses } from '@/lib/campuses';
 import { showToast } from '@/lib/toast';
-import type { Quote, QuoteState, Weekday, Teacher, Coordinator } from '@/types/quote';
+import type { Quote, QuoteService, QuoteState, Weekday, Teacher, Coordinator } from '@/types/quote';
+import type { Campus, ImedaService } from '@/types/finance';
 
 interface QuoteEditorProps {
     quote?: Quote | null;
@@ -21,11 +25,17 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
     const [clients, setClients] = useState<ClientFull[]>([]);
+    const [campuses, setCampuses] = useState<Campus[]>([]);
+    const [allServices, setAllServices] = useState<ImedaService[]>([]);
 
     // Collapsible section states
     const [settingsOpen, setSettingsOpen] = useState(true);
     const [staffingOpen, setStaffingOpen] = useState(false);
     const [servicesOpen, setServicesOpen] = useState(false);
+
+    // Share modal state
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [previewCurrency, setPreviewCurrency] = useState<'AED' | 'USD' | 'EUR'>('AED');
 
     // Helper to convert activeWorkdays from Firestore (could be array or object)
     const parseActiveWorkdays = (workdays: unknown): Set<Weekday> => {
@@ -71,22 +81,117 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
     });
 
     useEffect(() => {
-        loadClients();
+        loadData();
     }, []);
 
-    const loadClients = async () => {
+    const loadData = async () => {
         try {
-            const data = await getClients('imeda');
-            setClients(data);
+            const [clientsData, campusesData, servicesData] = await Promise.all([
+                getClients('imeda'),
+                getCampuses(),
+                getServices()
+            ]);
+            setClients(clientsData);
+            setCampuses(campusesData);
+            setAllServices(servicesData);
+
+            // Initialize services if empty (New Quote)
+            if (state.services.length === 0 && servicesData.length > 0) {
+                // Determine initial campus ID (or first available) to set initial costs
+                const initialCampusId = state.campusId || campusesData[0]?.id;
+
+                const quoteServices: QuoteService[] = servicesData.map(s => {
+                    // Calculate cost based on initial campus or fallback
+                    let cost = 0;
+                    if (initialCampusId && s.campusCosts?.[initialCampusId]) {
+                        cost = s.campusCosts[initialCampusId];
+                    } else {
+                        cost = Object.values(s.campusCosts || {})[0] || 0;
+                    }
+
+                    return {
+                        serviceId: s.id,
+                        name: s.name,
+                        description: s.description,
+                        timeBasis: mapTimeUnit(s.timeUnit),
+                        costPrice: cost,
+                        enabled: s.type === 'Default Service',
+                        isDefault: s.type === 'Default Service',
+                        imageUrl: s.imageUrl,
+                    };
+                });
+
+                setState(prev => ({ ...prev, services: quoteServices }));
+            }
         } catch (error) {
-            console.error('Error loading clients:', error);
+            console.error('Error loading initial data:', error);
         }
     };
+
+    const mapTimeUnit = (timeUnit: string): QuoteService['timeBasis'] => {
+        switch (timeUnit) {
+            case 'Per Seminar': return 'OneOff';
+            case 'Per Day': return 'PerDay';
+            case 'Per Night': return 'PerNight';
+            case 'Per Workday': return 'PerWorkday';
+            default: return 'OneOff';
+        }
+    };
+
+    const handleCampusChange = (newCampusId: string) => {
+        const selectedCampus = campuses.find(c => c.id === newCampusId);
+
+        // Update service prices based on new campus
+        const updatedServices = state.services.map(service => {
+            const definition = allServices.find(s => s.id === service.serviceId);
+            if (!definition) return service;
+
+            // Determine new cost
+            let newCost = definition.campusCosts?.[newCampusId];
+            if (newCost === undefined) {
+                newCost = definition.campusCosts?.['default'];
+            }
+            if (newCost === undefined) {
+                // Fallback to first available if specific campus cost missing
+                newCost = Object.values(definition.campusCosts || {})[0] || 0;
+            }
+
+            return {
+                ...service,
+                costPrice: newCost
+            };
+        });
+
+        setState(prev => ({
+            ...prev,
+            campusId: newCampusId,
+            services: updatedServices
+        }));
+
+        if (newCampusId && selectedCampus) {
+            showToast.success(`Service prices updated for ${selectedCampus.name}`);
+        } else {
+            setState(prev => ({ ...prev, campusId: newCampusId }));
+        }
+    };
+
+
 
     const summary = calculateQuoteSummary(state);
 
     const formatCurrency = (amount: number): string => {
-        return `AED ${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+        let value = amount;
+        let currency = 'AED';
+
+        if (previewCurrency === 'USD') {
+            value = amount / 3.67;
+            currency = 'USD';
+        } else if (previewCurrency === 'EUR') {
+            value = amount / 4.0;
+            currency = 'EUR';
+        }
+
+        return `${currency} ${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     };
 
     const handleSave = async () => {
@@ -194,14 +299,26 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                 <h1 className="text-lg font-medium text-gray-900 dark:text-white">
                     {quote ? state.quoteName || 'Edit Quote' : 'New Quote'}
                 </h1>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-4 py-2 bg-imeda text-white hover:opacity-90 disabled:opacity-50 text-sm font-medium"
-                    style={{ borderRadius: '0.25rem' }}
-                >
-                    {saving ? 'Saving...' : 'Save'}
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setShareModalOpen(true)}
+                        disabled={!quote?.id}
+                        className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                        style={{ borderRadius: '0.25rem' }}
+                        title={!quote?.id ? 'Save quote first to share' : 'Share quote'}
+                    >
+                        <Share2 className="w-4 h-4" />
+                        Share
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-4 py-2 bg-imeda text-white hover:opacity-90 disabled:opacity-50 text-sm font-medium"
+                        style={{ borderRadius: '0.25rem' }}
+                    >
+                        {saving ? 'Saving...' : 'Save'}
+                    </button>
+                </div>
             </div>
 
             {/* Main Layout - 2 columns */}
@@ -223,7 +340,11 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                         onQuoteNameChange={(name) => setState({ ...state, quoteName: name })}
                         clientId={state.clientId || ''}
                         onClientChange={(id) => setState({ ...state, clientId: id })}
+
                         clients={clients}
+                        campusId={state.campusId}
+                        onCampusChange={handleCampusChange}
+                        campuses={campuses}
                     />
 
                     <StaffingSection
@@ -237,6 +358,7 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                         onAddCoordinator={handleAddCoordinator}
                         onRemoveCoordinator={handleRemoveCoordinator}
                         onUpdateCoordinator={handleUpdateCoordinator}
+                        activeWorkdaysCount={summary.workdays}
                         isOpen={staffingOpen}
                         onToggle={() => setStaffingOpen(!staffingOpen)}
                     />
@@ -297,7 +419,23 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
 
                     {/* Cost Breakdown - Single Card */}
                     <div className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 p-5" style={{ borderRadius: '0.5rem' }}>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Cost Breakdown</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Cost Breakdown</h3>
+                            <div className="flex bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded-md p-0.5">
+                                {['AED', 'USD', 'EUR'].map((curr) => (
+                                    <button
+                                        key={curr}
+                                        onClick={() => setPreviewCurrency(curr as any)}
+                                        className={`px-3 py-1 text-xs font-medium rounded transition-all ${previewCurrency === curr
+                                                ? 'bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-white font-bold shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                                            }`}
+                                    >
+                                        {curr}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
                         {summary.serviceBreakdown.length === 0 && summary.staffBreakdown.length === 0 ? (
                             <p className="text-sm text-gray-400 py-4 text-center">Add services and staff</p>
@@ -361,6 +499,13 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                     </div>
                 </div>
             </div>
+
+            {/* Share Modal */}
+            <ShareQuoteModal
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
+                quoteId={quote?.id || ''}
+            />
         </div>
     );
 }

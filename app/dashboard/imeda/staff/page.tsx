@@ -35,16 +35,10 @@ export default function ImedaStaffPage() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-800 p-6 border border-gray-200 dark:border-gray-700" style={{ borderRadius: '0.5rem' }}>
-                <div>
-                    <h1 className="text-2xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                        <Users className="w-6 h-6 text-imeda" />
-                        IMEDA Staff
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage campus directors, seminar coordinators, and instructors.
-                    </p>
-                </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h1 className="text-3xl text-gray-900 dark:text-white">
+                    IMEDA Staff
+                </h1>
                 <Link href="/dashboard/imeda/staff/new">
                     <button
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-imeda text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium font-sans w-full md:w-auto"

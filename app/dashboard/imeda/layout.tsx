@@ -14,6 +14,7 @@ export default function ImedaLayout({
         { label: 'Teachers', href: '/dashboard/imeda/teachers' },
         { label: 'Invoices', href: '/dashboard/imeda/invoices' },
         { label: 'Quotes', href: '/dashboard/imeda/quotes' },
+        { label: 'Deals', href: '/dashboard/imeda/deals' },
         { label: 'Services', href: '/dashboard/imeda/services' },
         { label: 'Staff', href: '/dashboard/imeda/staff' },
         { label: 'Finance', href: '/dashboard/imeda/finance' },

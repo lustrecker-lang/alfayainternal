@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
-import { getServices } from '@/lib/services';
 import type { QuoteService } from '@/types/quote';
 
 interface SimpleServicesSectionProps {
@@ -20,45 +19,6 @@ export default function SimpleServicesSection({
     onToggle,
     participantCount,
 }: SimpleServicesSectionProps) {
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadServices();
-    }, []);
-
-    const loadServices = async () => {
-        try {
-            const imedaServices = await getServices();
-
-            if (services.length === 0 && imedaServices.length > 0) {
-                const quoteServices: QuoteService[] = imedaServices.map(s => ({
-                    serviceId: s.id,
-                    name: s.name,
-                    description: s.description,
-                    timeBasis: mapTimeUnit(s.timeUnit),
-                    costPrice: Object.values(s.campusCosts || {})[0] || 0,
-                    enabled: s.type === 'Default Service',
-                    isDefault: s.type === 'Default Service',
-                    imageUrl: s.imageUrl,
-                }));
-                onServicesChange(quoteServices);
-            }
-        } catch (error) {
-            console.error('Error loading services:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const mapTimeUnit = (timeUnit: string): QuoteService['timeBasis'] => {
-        switch (timeUnit) {
-            case 'Per Seminar': return 'OneOff';
-            case 'Per Day': return 'PerDay';
-            case 'Per Night': return 'PerNight';
-            case 'Per Workday': return 'PerWorkday';
-            default: return 'OneOff';
-        }
-    };
 
     const toggleService = (serviceId: string) => {
         onServicesChange(
@@ -118,11 +78,7 @@ export default function SimpleServicesSection({
             {/* Content */}
             {isOpen && (
                 <div className="px-4 pb-4">
-                    {loading ? (
-                        <div className="flex justify-center py-4">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-imeda"></div>
-                        </div>
-                    ) : services.length === 0 ? (
+                    {services.length === 0 ? (
                         <div className="text-xs text-gray-400 py-2">No services available</div>
                     ) : (
                         <div className="space-y-1">

@@ -82,7 +82,7 @@ export default function QuotesPage() {
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h1 className="text-2xl font-medium text-gray-900 dark:text-white">Quotes</h1>
+                <h1 className="text-3xl text-gray-900 dark:text-white">Quotes</h1>
                 <Link href="/dashboard/imeda/quotes/new">
                     <button
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-imeda text-white hover:opacity-90 transition-opacity shadow-sm text-sm font-medium w-full md:w-auto"

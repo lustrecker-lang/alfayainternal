@@ -4,6 +4,8 @@ import React from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Weekday } from '@/types/quote';
 import type { ClientFull } from '@/lib/finance';
+import type { Campus } from '@/types/finance';
+import { calculateCalendarDays, calculateNights } from '@/lib/quoteCalculations';
 
 interface GlobalSettingsProps {
     arrivalDate: Date | null;
@@ -22,6 +24,10 @@ interface GlobalSettingsProps {
     clientId: string;
     onClientChange: (id: string) => void;
     clients: ClientFull[];
+    // Campus props
+    campusId?: string;
+    onCampusChange: (id: string) => void;
+    campuses: Campus[];
 }
 
 const WEEKDAYS: { day: Weekday; letter: string }[] = [
@@ -50,6 +56,9 @@ export default function GlobalSettings({
     clientId,
     onClientChange,
     clients,
+    campusId,
+    onCampusChange,
+    campuses,
 }: GlobalSettingsProps) {
     const handleWorkdayToggle = (day: Weekday) => {
         const newSet = new Set(activeWorkdays);
@@ -110,6 +119,26 @@ export default function GlobalSettings({
                         </select>
                     </div>
 
+                    {/* Campus Dropdown */}
+                    <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            Campus
+                        </label>
+                        <select
+                            value={campusId || ''}
+                            onChange={(e) => onCampusChange(e.target.value)}
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda text-sm"
+                            style={{ borderRadius: '0.25rem' }}
+                        >
+                            <option value="">Select campus...</option>
+                            {campuses.map((campus) => (
+                                <option key={campus.id} value={campus.id}>
+                                    {campus.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     {/* Quote Name (Optional) */}
                     <div>
                         <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -153,6 +182,13 @@ export default function GlobalSettings({
                             />
                         </div>
                     </div>
+
+                    {/* Duration Display */}
+                    {arrivalDate && departureDate && (
+                        <div className="text-xs text-center text-gray-500 font-medium bg-gray-50 dark:bg-zinc-700/50 py-1.5 rounded text-[11px]">
+                            {calculateCalendarDays(arrivalDate, departureDate)} Days · {calculateNights(arrivalDate, departureDate)} Nights
+                        </div>
+                    )}
 
                     {/* Participants */}
                     <div>
