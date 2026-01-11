@@ -81,7 +81,7 @@ export interface Seminar {
 
 export interface GeneratedDocument {
     id: string;
-    type: 'invitation_letter' | 'certificate' | 'welcome_pack' | 'visa_support' | 'other';
+    type: 'invitation_letter' | 'certificate' | 'welcome_pack' | 'attendance_sheet' | 'visa_support' | 'other';
     participantId: string;         // Link to SeminarParticipant.id
     createdAt: Date;
     metadata: Record<string, any>; // Stores variables like embassy name, etc.

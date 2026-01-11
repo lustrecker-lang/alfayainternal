@@ -13,6 +13,8 @@ import type { CompanyProfile, BankAccount } from '@/types/settings';
 import { Plus, Trash2, Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/finance';
+import Combobox from '@/components/ui/Combobox';
+
 
 export default function EditImedaInvoiceFormPage() {
     const router = useRouter();

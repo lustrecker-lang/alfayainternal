@@ -7,17 +7,33 @@ export default function ImedaLayout({
 }) {
     const tabs = [
         { label: 'Overview', href: '/dashboard/imeda' },
-        { label: 'Clients', href: '/dashboard/imeda/clients' },
-        { label: 'Courses', href: '/dashboard/imeda/courses' },
         { label: 'Seminars', href: '/dashboard/imeda/seminars' },
-        { label: 'Campuses', href: '/dashboard/imeda/campuses' },
-        { label: 'Teachers', href: '/dashboard/imeda/teachers' },
-        { label: 'Invoices', href: '/dashboard/imeda/invoices' },
-        { label: 'Quotes', href: '/dashboard/imeda/quotes' },
         { label: 'Deals', href: '/dashboard/imeda/deals' },
-        { label: 'Services', href: '/dashboard/imeda/services' },
-        { label: 'Staff', href: '/dashboard/imeda/staff' },
-        { label: 'Finance', href: '/dashboard/imeda/finance' },
+        {
+            label: 'Financial',
+            subTabs: [
+                { label: 'Quotes', href: '/dashboard/imeda/quotes' },
+                { label: 'Analytics', href: '/dashboard/imeda/analytics' },
+                { label: 'Finance', href: '/dashboard/imeda/finance' },
+                { label: 'Invoices', href: '/dashboard/imeda/invoices' },
+            ]
+        },
+        {
+            label: 'People',
+            subTabs: [
+                { label: 'Clients', href: '/dashboard/imeda/clients' },
+                { label: 'Teachers', href: '/dashboard/imeda/teachers' },
+                { label: 'Staff', href: '/dashboard/imeda/staff' },
+            ]
+        },
+        {
+            label: 'Other',
+            subTabs: [
+                { label: 'Campuses', href: '/dashboard/imeda/campuses' },
+                { label: 'Courses', href: '/dashboard/imeda/courses' },
+                { label: 'Services', href: '/dashboard/imeda/services' },
+            ]
+        },
     ];
 
     return (

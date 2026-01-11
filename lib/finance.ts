@@ -216,6 +216,16 @@ export async function getTransactionById(id: string): Promise<Transaction | null
 export interface Vendor {
     id: string;
     name: string;
+    taxId?: string;
+    email?: string;
+    phone?: string;
+    contactPerson?: string;
+    website?: string;
+    address?: {
+        street?: string;
+        city?: string;
+        country?: string;
+    };
     createdAt: Date;
 }
 
@@ -228,11 +238,20 @@ export async function getVendors(): Promise<Vendor[]> {
             query(collection(db, 'vendors'), orderBy('name', 'asc'))
         );
 
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().name,
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
-        }));
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                name: data.name,
+                taxId: data.taxId,
+                email: data.email,
+                phone: data.phone,
+                contactPerson: data.contactPerson,
+                website: data.website,
+                address: data.address,
+                createdAt: data.createdAt?.toDate() || new Date(),
+            };
+        });
     } catch (error) {
         console.error('Error fetching vendors:', error);
         return [];
@@ -273,12 +292,68 @@ export async function addVendor(name: string): Promise<Vendor> {
 /**
  * Delete a vendor from the global collection
  */
+
+/**
+ * Update a vendor
+ */
+export async function updateVendor(id: string, updates: Partial<Vendor>): Promise<void> {
+    try {
+        const updateData: any = { ...updates };
+        delete updateData.id;
+        delete updateData.createdAt;
+
+        await updateDoc(doc(db, 'vendors', id), updateData);
+    } catch (error) {
+        console.error('Error updating vendor:', error);
+        throw new Error('Failed to update vendor');
+    }
+}
+
+/**
+ * Delete a vendor from the global collection
+ */
 export async function deleteVendor(id: string): Promise<void> {
     try {
         await deleteDoc(doc(db, 'vendors', id));
     } catch (error) {
         console.error('Error deleting vendor:', error);
         throw new Error('Failed to delete vendor');
+    }
+}
+
+/**
+ * Seed vendors from JSON
+ */
+export async function seedVendors(vendorsData: any[]): Promise<void> {
+    try {
+        const existing = await getVendors();
+        const existingNames = new Set(existing.map(v => v.name.toLowerCase()));
+
+        const newVendors = vendorsData.filter((v: any) =>
+            v.Name && !existingNames.has(v.Name.trim().toLowerCase())
+        );
+
+        // Process in batches of 50
+        const chunkSize = 50;
+        for (let i = 0; i < newVendors.length; i += chunkSize) {
+            const chunk = newVendors.slice(i, i + chunkSize);
+            await Promise.all(chunk.map(async (v: any) => {
+                await addDoc(collection(db, 'vendors'), {
+                    name: v.Name.trim(),
+                    contactPerson: v['Contact Name'] || null,
+                    email: v.Email || null,
+                    phone: String(v.Phone) || null,
+                    address: {
+                        street: v.Address || null,
+                        country: v.Country || null
+                    },
+                    createdAt: Timestamp.now()
+                });
+            }));
+        }
+    } catch (error) {
+        console.error('Error seeding vendors:', error);
+        throw new Error('Failed to seed vendors');
     }
 }
 

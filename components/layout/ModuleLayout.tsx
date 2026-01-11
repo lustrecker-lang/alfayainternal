@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
 
-interface Tab {
+export interface Tab {
     label: string;
-    href: string;
+    href?: string;
+    subTabs?: Tab[];
 }
 
 interface ModuleLayoutProps {
@@ -19,6 +21,14 @@ interface ModuleLayoutProps {
 export default function ModuleLayout({ tabs, brandColor, actions, children }: ModuleLayoutProps) {
     const pathname = usePathname();
 
+    const isTabActive = (tab: Tab) => {
+        if (tab.href === pathname) return true;
+        if (tab.subTabs) {
+            return tab.subTabs.some(sub => sub.href === pathname);
+        }
+        return false;
+    };
+
     return (
         <div>
             {/* Tab Navigation Bar */}
@@ -26,21 +36,54 @@ export default function ModuleLayout({ tabs, brandColor, actions, children }: Mo
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between">
                         {/* Tabs */}
-                        <div className="flex gap-6 overflow-x-auto scrollbar-hide">
+                        <div className="flex gap-2 overflow-x-visible items-center">
                             {tabs.map((tab) => {
-                                const isActive = pathname === tab.href;
+                                const isActive = isTabActive(tab);
+                                const baseClasses = `
+                                    flex items-center gap-1 py-4 px-3 border-b-2 text-sm font-medium transition-all whitespace-nowrap cursor-pointer select-none
+                                    ${isActive
+                                        ? `border-${brandColor} text-gray-900 dark:text-white font-bold`
+                                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                                    }
+                                `;
+
+                                if (tab.subTabs) {
+                                    return (
+                                        <div key={tab.label} className="relative group">
+                                            <div className={baseClasses}>
+                                                {tab.label}
+                                                <ChevronDown className={`w-4 h-4 ml-1 transition-transform group-hover:rotate-180 opacity-50`} />
+                                            </div>
+
+                                            {/* Dropdown Menu */}
+                                            <div className="absolute left-0 top-full pt-1 min-w-[180px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                                <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 overflow-hidden py-1">
+                                                    {tab.subTabs.map(subTab => (
+                                                        <Link
+                                                            key={subTab.href}
+                                                            href={subTab.href!}
+                                                            className={`
+                                                                block px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-zinc-700/50
+                                                                ${pathname === subTab.href
+                                                                    ? `text-${brandColor} font-semibold bg-gray-50 dark:bg-zinc-700/30`
+                                                                    : 'text-gray-700 dark:text-gray-300'
+                                                                }
+                                                            `}
+                                                        >
+                                                            {subTab.label}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
 
                                 return (
                                     <Link
                                         key={tab.href}
-                                        href={tab.href}
-                                        className={`
-                      py-4 px-1 border-b-2 text-sm font-medium transition-all whitespace-nowrap
-                      ${isActive
-                                                ? `border-${brandColor} text-gray-900 dark:text-white font-bold`
-                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                                            }
-                    `}
+                                        href={tab.href!}
+                                        className={baseClasses}
                                     >
                                         {tab.label}
                                     </Link>
@@ -58,7 +101,7 @@ export default function ModuleLayout({ tabs, brandColor, actions, children }: Mo
                 </div>
             </div>
 
-            {/* Page Content - Wrapped with consistent max-width */}
+            {/* Page Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {children}
             </div>

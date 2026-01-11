@@ -7,6 +7,7 @@ export default function FinanceLayout({
 }) {
     const tabs = [
         { label: 'Overview', href: '/dashboard/finance' },
+        { label: 'Analytics', href: '/dashboard/finance/analytics' },
         { label: 'Reports', href: '/dashboard/finance/reports' },
     ];
 

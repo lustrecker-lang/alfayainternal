@@ -1718,7 +1718,7 @@ function DocumentsTab({ seminar, clients, onUpdate }: { seminar: Seminar; client
 
     // Generator State
     const [selectedParticipantId, setSelectedParticipantId] = useState('');
-    const [docType, setDocType] = useState<'invitation_letter' | 'welcome_pack' | 'certificate'>('invitation_letter');
+    const [docType, setDocType] = useState<'invitation_letter' | 'welcome_pack' | 'certificate' | 'attendance_sheet'>('invitation_letter');
     const [metadata, setMetadata] = useState({ embassy: '', notes: '' });
 
     // Template State
@@ -1758,38 +1758,70 @@ function DocumentsTab({ seminar, clients, onUpdate }: { seminar: Seminar; client
             return;
         }
 
-        const template = availableTemplates.find(t => t.id === selectedTemplateId);
-        if (!template) {
-            showToast.error('Please select a template');
-            return;
-        }
+        // Skip template check for attendance sheet
+        let template = null;
+        let templateSnapshot = null;
 
-        setGenerating(true);
-        try {
-            const templateSnapshot = {
+        if (docType !== 'attendance_sheet') {
+            template = availableTemplates.find(t => t.id === selectedTemplateId);
+            if (!template) {
+                showToast.error('Please select a template');
+                return;
+            }
+
+            templateSnapshot = {
                 subject: template.subject,
                 subtitle: template.subtitle,
                 body: template.body,
                 layout: template.layout
             };
+        }
 
+        setGenerating(true);
+        try {
             const docsToCreate: GeneratedDocument[] = [];
 
+            // Helper to clean metadata (remove undefined values for Firestore)
+            const cleanMetadata = (meta: any) => {
+                const cleaned: any = {};
+                Object.keys(meta).forEach(key => {
+                    if (meta[key] !== undefined) {
+                        cleaned[key] = meta[key];
+                    }
+                });
+                return cleaned;
+            };
+
             if (selectedParticipantId === 'all') {
-                // Batch create for all participants
-                seminar.participants.forEach(p => {
+                // For attendance sheet, create only ONE document for all participants
+                if (docType === 'attendance_sheet') {
                     docsToCreate.push({
                         id: crypto.randomUUID(),
                         type: docType,
-                        participantId: p.id,
+                        participantId: seminar.participants[0]?.id || 'all', // Use first participant or 'all'
                         createdAt: new Date(),
-                        metadata: {
+                        metadata: cleanMetadata({
                             ...metadata,
-                            templateId: template.id,
+                            templateId: template?.id,
                             templateSnapshot
-                        }
+                        })
                     });
-                });
+                } else {
+                    // Batch create for all participants (other document types)
+                    seminar.participants.forEach(p => {
+                        docsToCreate.push({
+                            id: crypto.randomUUID(),
+                            type: docType,
+                            participantId: p.id,
+                            createdAt: new Date(),
+                            metadata: cleanMetadata({
+                                ...metadata,
+                                templateId: template?.id,
+                                templateSnapshot
+                            })
+                        });
+                    });
+                }
             } else {
                 // Single create
                 docsToCreate.push({
@@ -1797,11 +1829,11 @@ function DocumentsTab({ seminar, clients, onUpdate }: { seminar: Seminar; client
                     type: docType,
                     participantId: selectedParticipantId,
                     createdAt: new Date(),
-                    metadata: {
+                    metadata: cleanMetadata({
                         ...metadata,
-                        templateId: template.id,
+                        templateId: template?.id,
                         templateSnapshot
-                    }
+                    })
                 });
             }
 
@@ -1944,33 +1976,36 @@ function DocumentsTab({ seminar, clients, onUpdate }: { seminar: Seminar; client
                                 >
                                     <option value="invitation_letter">Invitation Letter</option>
                                     <option value="welcome_pack">Welcome Pack (Multi-page)</option>
+                                    <option value="attendance_sheet">Attendance Sheet</option>
                                     <option value="certificate" disabled>Certificate (Coming Soon)</option>
                                 </select>
                             </div>
 
-                            {/* Template Selection */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Select Template</label>
-                                <select
-                                    value={selectedTemplateId}
-                                    onChange={(e) => setSelectedTemplateId(e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm disabled:bg-gray-100"
-                                    disabled={availableTemplates.length === 0}
-                                >
-                                    {availableTemplates.length === 0 ? (
-                                        <option value="">No templates available</option>
-                                    ) : (
-                                        availableTemplates.map(t => (
-                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                        ))
+                            {/* Template Selection - Hide for attendance sheet */}
+                            {docType !== 'attendance_sheet' && (
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Select Template</label>
+                                    <select
+                                        value={selectedTemplateId}
+                                        onChange={(e) => setSelectedTemplateId(e.target.value)}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm disabled:bg-gray-100"
+                                        disabled={availableTemplates.length === 0}
+                                    >
+                                        {availableTemplates.length === 0 ? (
+                                            <option value="">No templates available</option>
+                                        ) : (
+                                            availableTemplates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))
+                                        )}
+                                    </select>
+                                    {availableTemplates.length === 0 && (
+                                        <p className="text-[10px] text-red-500 mt-1">
+                                            No active template found for this document type and campus. Please create one in Settings.
+                                        </p>
                                     )}
-                                </select>
-                                {availableTemplates.length === 0 && (
-                                    <p className="text-[10px] text-red-500 mt-1">
-                                        No active template found for this document type and campus. Please create one in Settings.
-                                    </p>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {/* Participant */}
                             <div>
@@ -2009,7 +2044,7 @@ function DocumentsTab({ seminar, clients, onUpdate }: { seminar: Seminar; client
                             </button>
                             <button
                                 onClick={handleGenerate}
-                                disabled={generating || availableTemplates.length === 0}
+                                disabled={generating || (docType !== 'attendance_sheet' && availableTemplates.length === 0)}
                                 className="px-4 py-2 bg-imeda text-white text-sm rounded hover:opacity-90 disabled:opacity-50"
                             >
                                 {generating ? 'Generating...' : 'Generate & Print'}

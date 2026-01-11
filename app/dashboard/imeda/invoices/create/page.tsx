@@ -87,6 +87,7 @@ export default function CreateInvoicePage() {
         setCompanyProfile(profileData);
         setBrand(brandData);
 
+
         // Pre-select default bank account if available for default currency
         if (profileData?.bank_accounts) {
             const defaultBank = profileData.bank_accounts.find(b => b.is_default && b.currency === 'AED')

@@ -33,6 +33,7 @@ type RenderItem = {
     campus: Campus | null; // Added campus reference
     companyProfile: CompanyProfile | null;
     courses: Course[]; // Added courses for syllabus
+    clients: ClientFull[]; // All clients for attendance sheet
 };
 
 // ==========================================
@@ -211,7 +212,8 @@ export default function DocumentPrintView() {
                         seminar: seminarData,
                         campus: c,
                         companyProfile: companyData,
-                        courses: sc
+                        courses: sc,
+                        clients: clientsData
                     });
                 }
                 setRenderQueue(queue);
@@ -233,6 +235,7 @@ export default function DocumentPrintView() {
                 __html: `
                 @media print {
                     @page { size: A4; margin: 0; }
+                    ${renderQueue.some(item => item.document.type === 'attendance_sheet') ? '@page { size: A4 landscape; margin: 0; }' : ''}
                     html, body {
                         background: white !important;
                         height: 100vh;
@@ -283,6 +286,16 @@ export default function DocumentPrintView() {
                                 {/* Break after full pack if not last */}
                                 {!isLastDoc && <div className="page-break"></div>}
                             </div>
+                        );
+                    } else if (item.document.type === 'attendance_sheet') {
+                        // Attendance Sheet
+                        return (
+                            <AttendanceSheetPage
+                                key={item.document.id}
+                                item={item}
+                                brand={brand}
+                                className={!isLastDoc ? "page-break" : ""}
+                            />
                         );
                     } else {
                         // Default Standard Document
@@ -562,25 +575,54 @@ function PracticalInfoPage({ item, brand }: { item: RenderItem, brand: any }) {
                             <div>
                                 <h3 className="font-medium text-gray-900">{item.campus?.name || 'IMEDA Campus'}</h3>
                                 <div className="mt-2 text-sm text-gray-600 space-y-1">
-                                    {item.campus?.address ? (
-                                        <p className="whitespace-pre-wrap">{item.campus.address}</p>
-                                    ) : (
-                                        <p>{item.companyProfile?.address.street}, {item.companyProfile?.address.city}</p>
-                                    )}
-                                    <p className="text-imeda font-medium mt-2">{item.campus?.city}, {item.campus?.country}</p>
+                                    {(() => {
+                                        // Find the assigned office from the seminar's officeIds
+                                        const assignedOffice = item.campus?.offices?.find(
+                                            office => item.seminar.officeIds?.includes(office.id)
+                                        );
+
+                                        if (assignedOffice) {
+                                            return (
+                                                <>
+                                                    <p>{assignedOffice.name}</p>
+                                                    <p>{assignedOffice.street}</p>
+                                                    <p>{assignedOffice.city}{assignedOffice.postalCode ? `, ${assignedOffice.postalCode}` : ''}</p>
+                                                    <p className="text-imeda font-medium mt-2">{assignedOffice.country}</p>
+                                                    {assignedOffice.phone && <p className="mt-2">Tel: {assignedOffice.phone}</p>}
+                                                    {assignedOffice.email && <p>Email: {assignedOffice.email}</p>}
+                                                </>
+                                            );
+                                        } else if (item.campus?.address) {
+                                            return (
+                                                <>
+                                                    <p className="whitespace-pre-wrap">{item.campus.address}</p>
+                                                    <p className="text-imeda font-medium mt-2">{item.campus?.city}, {item.campus?.country}</p>
+                                                </>
+                                            );
+                                        } else {
+                                            return <p>{item.companyProfile?.address.street}, {item.companyProfile?.address.city}</p>;
+                                        }
+                                    })()}
                                 </div>
                             </div>
 
                             {/* Map Image - Square */}
-                            {item.campus?.offices?.[0]?.mapImageUrl && (
-                                <div className="flex items-start justify-end">
-                                    <img
-                                        src={item.campus.offices[0].mapImageUrl}
-                                        alt="Location Map"
-                                        className="w-48 h-48 object-cover rounded border border-gray-200"
-                                    />
-                                </div>
-                            )}
+                            {(() => {
+                                const assignedOffice = item.campus?.offices?.find(
+                                    office => item.seminar.officeIds?.includes(office.id)
+                                );
+                                const mapImageUrl = assignedOffice?.mapImageUrl || item.campus?.offices?.[0]?.mapImageUrl;
+
+                                return mapImageUrl ? (
+                                    <div className="flex items-start justify-end">
+                                        <img
+                                            src={mapImageUrl}
+                                            alt="Location Map"
+                                            className="w-48 h-48 object-cover rounded border border-gray-200"
+                                        />
+                                    </div>
+                                ) : null;
+                            })()}
                         </div>
                     </div>
                 </section>
@@ -752,6 +794,93 @@ function CourseSyllabusPage({ course, item, brand }: { course: Course, item: Ren
             {/* Footer */}
             <div className="mt-auto pt-4 border-t border-gray-100 text-center text-[10px] text-gray-400">
                 <p>Le programme de formation est susceptible de modifications. Veuillez vérifier auprès de l'administration pour la dernière version.</p>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// SUB-COMPONENT: Attendance Sheet Page
+// ==========================================
+function AttendanceSheetPage({ item, brand, className }: { item: RenderItem, brand: any, className?: string }) {
+    // Calculate all days between start and end date
+    const startDate = new Date(item.seminar.startDate);
+    const endDate = new Date(item.seminar.endDate);
+    const days: Date[] = [];
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d));
+    }
+
+    // Get all participants
+    const participants = item.seminar.participants || [];
+
+    return (
+        <div className={`max-w-[297mm] mx-auto bg-white shadow-lg print:shadow-none min-h-[210mm] p-[10mm] print:p-[10mm] relative print:w-full print:max-w-none print:rounded-none ${className || ''}`}>
+
+            {/* Header */}
+            <div className="mb-6 pb-3 border-b-2 border-imeda">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-imeda">Feuille de Présence</h1>
+                        <p className="text-sm text-gray-600 mt-1">{item.seminar.name}</p>
+                        <p className="text-xs text-gray-500">
+                            {format(startDate, 'd MMM yyyy', { locale: fr })} - {format(endDate, 'd MMM yyyy', { locale: fr })}
+                        </p>
+                    </div>
+                    {brand?.logo_url && (
+                        <div className="relative w-20 h-12">
+                            <Image src={brand.logo_url} alt="Logo" fill className="object-contain object-right" />
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Attendance Table */}
+            <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300 text-xs">
+                    <thead>
+                        <tr className="bg-gray-100">
+                            <th className="border border-gray-300 p-2 text-left font-semibold w-48">Participant</th>
+                            {days.map((day, index) => (
+                                <th key={index} className="border border-gray-300 p-2 text-center font-semibold min-w-[60px]">
+                                    <div>{format(day, 'EEE', { locale: fr })}</div>
+                                    <div className="text-[10px] font-normal">{format(day, 'd MMM', { locale: fr })}</div>
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {participants.map((participant) => {
+                            // Find participant's client and contact name
+                            const client = item.clients?.find(c => c.id === participant.clientId);
+                            const contactName = client?.contacts?.[participant.contactIndex]?.name || participant.participantId || 'Unknown';
+
+                            return (
+                                <tr key={participant.id}>
+                                    <td className="border border-gray-300 p-2 font-medium">
+                                        {contactName}
+                                    </td>
+                                    {days.map((_, dIndex) => (
+                                        <td key={dIndex} className="border border-gray-300 p-1">
+                                            <div className="h-8"></div>
+                                        </td>
+                                    ))}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Teacher Signature */}
+            <div className="mt-8 pt-4 border-t border-gray-200">
+                <div className="flex justify-end">
+                    <div className="w-64">
+                        <p className="text-xs text-gray-600 mb-1">Signature de l'Enseignant :</p>
+                        <div className="border-b border-gray-400 h-16"></div>
+                    </div>
+                </div>
             </div>
         </div>
     );

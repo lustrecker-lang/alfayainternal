@@ -7,10 +7,11 @@ import { CompanyProfile } from '@/types/settings';
 import LegalIdentityForm from '@/components/settings/LegalIdentityForm';
 import BankAccountsManager from '@/components/settings/BankAccountsManager';
 import CountriesManager from '@/components/settings/CountriesManager';
+import VendorManager from '@/components/settings/VendorManager';
 import { Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'legal' | 'banking' | 'localization'>('legal');
+    const [activeTab, setActiveTab] = useState<'legal' | 'banking' | 'localization' | 'vendors'>('legal');
     const [profile, setProfile] = useState<CompanyProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -73,6 +74,15 @@ export default function SettingsPage() {
                     >
                         Localization
                     </button>
+                    <button
+                        onClick={() => setActiveTab('vendors')}
+                        className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'vendors'
+                            ? 'border-afconsult text-afconsult'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        Vendors
+                    </button>
                     <Link
                         href="/dashboard/settings/brands"
                         className="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -108,6 +118,12 @@ export default function SettingsPage() {
                 {activeTab === 'localization' && (
                     <div className="animate-in fade-in duration-300">
                         <CountriesManager />
+                    </div>
+                )}
+
+                {activeTab === 'vendors' && (
+                    <div className="animate-in fade-in duration-300">
+                        <VendorManager />
                     </div>
                 )}
             </div>

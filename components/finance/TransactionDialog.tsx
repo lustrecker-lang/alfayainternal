@@ -1,14 +1,23 @@
 'use client';
 
 import { useState, useEffect, FormEvent, useMemo } from 'react';
-import { saveTransaction } from '@/lib/finance';
+import { saveTransaction, updateTransaction } from '@/lib/finance';
+import type { Transaction } from '@/types/finance';
+import { getConsultants } from '@/lib/staff';
+import { getTeachers } from '@/lib/teachers';
+import { getSeminars } from '@/lib/seminars';
+import type { Consultant } from '@/types/staff';
+import type { ImedaTeacher } from '@/types/teacher';
+import type { Seminar } from '@/types/seminar';
+
 import { buildMetadata } from '@/types/finance';
 import type { TransactionFormData } from '@/types/finance';
 import { SUPPORTED_CURRENCIES, VAT_RATES, calculateVATFromGross, calculateExchangeRate } from '@/config/finance';
 import VendorCombobox from '@/components/finance/VendorCombobox';
 import ClientCombobox from '@/components/finance/ClientCombobox';
 import CategorySelect from '@/components/finance/CategorySelect';
-import { X, Upload, DollarSign, FileText, ChevronDown } from 'lucide-react';
+import Combobox from '@/components/ui/Combobox';
+import { X, Upload, DollarSign, FileText, ChevronDown, User, Users, Briefcase } from 'lucide-react';
 import { useBrandTheme } from '@/hooks/useBrandTheme';
 
 // Mock data sources - will be replaced with Firestore fetches later
@@ -37,6 +46,10 @@ interface TransactionDialogProps {
     defaultAppSlug?: string;
     brandColor?: string;
     prefillData?: Partial<TransactionFormData>;
+    /** If provided, dialog opens in edit mode with this transaction's data */
+    editTransaction?: Transaction;
+    /** If true and editTransaction is provided, dialog opens immediately */
+    openOnMount?: boolean;
 }
 
 const INITIAL_FORM_DATA: TransactionFormData = {
@@ -61,9 +74,12 @@ export default function TransactionDialog({
     defaultAppSlug,
     // brandColor prop is now deprecated/fallback, we use the hook
     brandColor = 'gray-500',
-    prefillData
+    prefillData,
+    editTransaction,
+    openOnMount = false,
 }: TransactionDialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const isEditMode = !!editTransaction;
+    const [isOpen, setIsOpen] = useState(openOnMount && isEditMode);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +107,85 @@ export default function TransactionDialog({
 
     const [proofFile, setProofFile] = useState<File | null>(null);
 
+    // Payee Logic
+    const [payeeType, setPayeeType] = useState<'vendor' | 'staff' | 'teacher'>('vendor');
+    const [staffMembers, setStaffMembers] = useState<Consultant[]>([]);
+    const [teachers, setTeachers] = useState<ImedaTeacher[]>([]);
+    const [seminars, setSeminars] = useState<Seminar[]>([]);
+
+    useEffect(() => {
+        // Fetch staff, teachers, and seminars on mount
+        const loadData = async () => {
+            try {
+                const [staffData, teacherData, seminarData] = await Promise.all([
+                    getConsultants(),
+                    getTeachers(),
+                    getSeminars('imeda')
+                ]);
+                setStaffMembers(staffData);
+                setTeachers(teacherData);
+                setSeminars(seminarData);
+            } catch (err) {
+                console.error('Failed to load transaction data', err);
+            }
+        };
+        loadData();
+    }, []);
+
+    // Initialize form from editTransaction when in edit mode
+    useEffect(() => {
+        if (editTransaction) {
+            const dateStr = editTransaction.date instanceof Date
+                ? editTransaction.date.toISOString().split('T')[0]
+                : new Date(editTransaction.date).toISOString().split('T')[0];
+
+            // Extract seminar_id from metadata if present
+            const seminarId = editTransaction.metadata && 'seminar_id' in editTransaction.metadata
+                ? (editTransaction.metadata.seminar_id as string)
+                : undefined;
+
+            setFormData({
+                date: dateStr,
+                vendor: editTransaction.vendor || '',
+                amount: editTransaction.totalAmount || editTransaction.amount || 0,
+                currency: editTransaction.currency || 'AED',
+                exchangeRate: editTransaction.exchangeRate || 1,
+                vatRate: editTransaction.vatRate || 0,
+                type: editTransaction.type,
+                category: editTransaction.category || '',
+                description: editTransaction.description || '',
+                unitId: editTransaction.unitId || '',
+                appSlug: editTransaction.metadata && 'app_id' in editTransaction.metadata
+                    ? (editTransaction.metadata.app_id as string)
+                    : '',
+                payoutSource: '',
+                seminarId: seminarId,
+                clientId: editTransaction.metadata && 'client_id' in editTransaction.metadata
+                    ? (editTransaction.metadata.client_id as string)
+                    : undefined,
+                projectId: editTransaction.metadata && 'project_id' in editTransaction.metadata
+                    ? (editTransaction.metadata.project_id as string)
+                    : undefined,
+                isBillable: editTransaction.metadata && 'is_billable' in editTransaction.metadata
+                    ? (editTransaction.metadata.is_billable as boolean)
+                    : false,
+                isOperational: editTransaction.metadata && 'is_operational' in editTransaction.metadata
+                    ? (editTransaction.metadata.is_operational as boolean)
+                    : false,
+            });
+
+            // Set VAT method based on existing rate
+            if (editTransaction.vatRate === 0) {
+                setVatMethod('exempt');
+            } else if (editTransaction.vatRate === 5) {
+                setVatMethod('standard');
+            } else {
+                setVatMethod('custom');
+                setCustomVatAmount(editTransaction.vatAmount || 0);
+            }
+        }
+    }, [editTransaction]);
+
     // Smart Defaults: Switch VAT method based on currency
     useEffect(() => {
         if (formData.currency === 'AED') {
@@ -113,6 +208,9 @@ export default function TransactionDialog({
         setCustomVatAmount(0);
         setForeignAmount(0);
         setProofFile(null);
+        setForeignAmount(0);
+        setProofFile(null);
+        setPayeeType('vendor');
         setError(null);
     };
 
@@ -180,26 +278,46 @@ export default function TransactionDialog({
             // Build metadata
             const metadata = buildMetadata(formData);
 
-            // Prepare transaction data with correct calculations
-            // We pass the calculated values as the 3rd argument (BankStatementContext)
-            await saveTransaction(
-                {
-                    ...formData,
-                    // Ensure VAT rate is correct based on method
-                    vatRate: vatMethod === 'exempt' ? 0 : (vatMethod === 'standard' ? 5 : 0),
-                    // Handle currency conversion for display/reporting logic inside saveTransaction
+            if (isEditMode && editTransaction) {
+                // UPDATE existing transaction
+                const updates: Partial<Transaction> = {
+                    date: new Date(formData.date),
+                    vendor: formData.vendor,
+                    category: formData.category,
+                    description: formData.description,
+                    type: formData.type,
+                    currency: formData.currency,
                     exchangeRate: formData.currency === 'AED' ? 1 : impliedExchangeRate,
-                    proofFile: proofFile || undefined,
-                },
-                metadata,
-                {
-                    vatIncluded,
-                    netAmount: vatBreakdown.netAmount,
+                    vatRate: vatMethod === 'exempt' ? 0 : (vatMethod === 'standard' ? 5 : 0),
+                    amount: vatBreakdown.netAmount,
                     vatAmount: vatBreakdown.vatAmount,
                     totalAmount: vatBreakdown.totalAmount,
-                    foreignAmount: formData.currency !== 'AED' ? foreignAmount : undefined,
-                }
-            );
+                    amountInAED: vatBreakdown.totalAmount,
+                    unitId: formData.unitId,
+                };
+
+                await updateTransaction(editTransaction.id, updates, metadata);
+            } else {
+                // CREATE new transaction
+                await saveTransaction(
+                    {
+                        ...formData,
+                        // Ensure VAT rate is correct based on method
+                        vatRate: vatMethod === 'exempt' ? 0 : (vatMethod === 'standard' ? 5 : 0),
+                        // Handle currency conversion for display/reporting logic inside saveTransaction
+                        exchangeRate: formData.currency === 'AED' ? 1 : impliedExchangeRate,
+                        proofFile: proofFile || undefined,
+                    },
+                    metadata,
+                    {
+                        vatIncluded,
+                        netAmount: vatBreakdown.netAmount,
+                        vatAmount: vatBreakdown.vatAmount,
+                        totalAmount: vatBreakdown.totalAmount,
+                        foreignAmount: formData.currency !== 'AED' ? foreignAmount : undefined,
+                    }
+                );
+            }
 
             resetForm();
             setIsOpen(false);
@@ -237,7 +355,7 @@ export default function TransactionDialog({
                                     style={{ color: activeColor }}
                                 />
                                 <h2 className="text-xl text-gray-900 dark:text-white font-sans">
-                                    {formData.type === 'INCOME' ? 'Log Income' : 'Log Expense'}
+                                    {isEditMode ? 'Edit Transaction' : (formData.type === 'INCOME' ? 'Log Income' : 'Log Expense')}
                                 </h2>
                             </div>
                             <button
@@ -308,9 +426,39 @@ export default function TransactionDialog({
                                     {/* HIDDEN for Circles Income (Payout Source replaces it in Section B) */}
                                     {!(formData.unitId === 'aftech' && formData.appSlug === 'circles' && formData.type === 'INCOME') && (
                                         <div>
-                                            <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">
-                                                {formData.type === 'INCOME' ? 'Received From / Client *' : 'Paid To / Vendor *'}
-                                            </label>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 font-sans">
+                                                    {formData.type === 'INCOME' ? 'Received From / Client *' : 'Paid To *'}
+                                                </label>
+
+                                                {/* Payee Type Selector (Expenses Only) */}
+                                                {formData.type === 'EXPENSE' && (
+                                                    <div className="flex bg-gray-100 dark:bg-zinc-800 rounded p-0.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setPayeeType('vendor'); setFormData({ ...formData, vendor: '' }); }}
+                                                            className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${payeeType === 'vendor' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                        >
+                                                            Vendor
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setPayeeType('staff'); setFormData({ ...formData, vendor: '' }); }}
+                                                            className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${payeeType === 'staff' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                        >
+                                                            Staff
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setPayeeType('teacher'); setFormData({ ...formData, vendor: '' }); }}
+                                                            className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${payeeType === 'teacher' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                        >
+                                                            Teacher
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {formData.type === 'INCOME' ? (
                                                 <ClientCombobox
                                                     value={formData.vendor}
@@ -319,11 +467,33 @@ export default function TransactionDialog({
                                                     placeholder="e.g., Client Company Name"
                                                 />
                                             ) : (
-                                                <VendorCombobox
-                                                    value={formData.vendor}
-                                                    onChange={(value) => setFormData({ ...formData, vendor: value })}
-                                                    placeholder="e.g., Emirates Airlines"
-                                                />
+                                                <>
+                                                    {payeeType === 'vendor' && (
+                                                        <VendorCombobox
+                                                            value={formData.vendor}
+                                                            onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                            placeholder="e.g., Emirates Airlines"
+                                                        />
+                                                    )}
+                                                    {payeeType === 'staff' && (
+                                                        <Combobox
+                                                            value={formData.vendor}
+                                                            options={staffMembers.map(s => ({ id: s.id, label: s.name, value: s.name }))}
+                                                            onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                            placeholder="Search staff..."
+                                                            icon={<Briefcase className="w-4 h-4" />}
+                                                        />
+                                                    )}
+                                                    {payeeType === 'teacher' && (
+                                                        <Combobox
+                                                            value={formData.vendor}
+                                                            options={teachers.map(t => ({ id: t.id, label: t.fullName, value: t.fullName }))}
+                                                            onChange={(value) => setFormData({ ...formData, vendor: value })}
+                                                            placeholder="Search teachers..."
+                                                            icon={<User className="w-4 h-4" />}
+                                                        />
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     )}
@@ -498,7 +668,7 @@ export default function TransactionDialog({
                             {/* ============================================ */}
                             {/* SECTION B: Context-Specific (Polymorphic)    */}
                             {/* ============================================ */}
-                            {renderSectionB(formData, setFormData, filteredProjects)}
+                            {renderSectionB(formData, setFormData, filteredProjects, seminars)}
 
                             {/* Summary Box (Read-only breakdown) */}
                             <div className="bg-gray-50 dark:bg-zinc-800 p-4 space-y-2" style={{ borderRadius: '0.25rem' }}>
@@ -561,8 +731,10 @@ export default function TransactionDialog({
 function renderSectionB(
     formData: TransactionFormData,
     setFormData: React.Dispatch<React.SetStateAction<TransactionFormData>>,
-    filteredProjects: typeof AFCONSULT_PROJECTS
+    filteredProjects: typeof AFCONSULT_PROJECTS,
+    seminars: Seminar[] = []
 ) {
+
     const { unitId, type } = formData;
 
     // No Section B for units without specific context
@@ -658,10 +830,25 @@ function renderSectionB(
         return (
             <div className="space-y-4">
                 <h3 className="text-sm font-normal uppercase tracking-wider text-gray-500 font-sans border-b border-gray-100 dark:border-zinc-800 pb-2">
-                    Context
+                    Seminar Linkage
                 </h3>
-                <div className="p-4 border border-dashed border-gray-200 dark:border-gray-700 text-center" style={{ borderRadius: '0.25rem' }}>
-                    <p className="text-sm text-gray-500 font-sans">Seminar linkage coming soon</p>
+
+                {/* Seminar Selector */}
+                <div>
+                    <label className="block text-sm font-normal text-gray-700 dark:text-gray-300 mb-1 font-sans">Associate with Seminar</label>
+                    <Combobox
+                        value={formData.seminarId || ''}
+                        options={seminars.map(s => ({
+                            id: s.id,
+                            label: `${s.name} (${new Date(s.startDate).toLocaleDateString()})`,
+                            value: s.id
+                        }))}
+                        onChange={(value) => setFormData({ ...formData, seminarId: value })}
+                        placeholder="Select a seminar (optional)"
+                    />
+                    <p className="text-xs text-gray-500 mt-1 font-sans">
+                        Link this transaction to a specific seminar for profit/loss tracking. Leave blank for operational/overhead.
+                    </p>
                 </div>
             </div>
         );
