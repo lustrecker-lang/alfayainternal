@@ -253,6 +253,14 @@ export function buildMetadata(formData: TransactionFormData): TransactionMetadat
 
 // === CAMPUS TYPES ===
 
+export interface OfficeMedia {
+    id: string;
+    url: string;
+    type: 'image' | 'video';
+    title?: string;
+    description?: string;
+}
+
 export interface CampusOffice {
     id: string;
     name: string;           // e.g., "Main Office", "Admissions Office"
@@ -264,12 +272,15 @@ export interface CampusOffice {
     phone?: string;
     email?: string;
     googleMapsLink?: string;
+    mapImageUrl?: string;   // Google Maps screenshot
+    media?: OfficeMedia[];  // Photos and videos for this office
 }
 
 export interface Campus {
     id: string;
     name: string;
     country: string;
+    city?: string; // New City Field
     address: string;        // Legacy field - kept for backward compatibility
     googleMapsLink?: string;
     imageUrl?: string;

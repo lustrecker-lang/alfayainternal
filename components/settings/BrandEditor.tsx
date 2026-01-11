@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CompanyBrand } from '@/types/brands';
 import { updateBrand, uploadBrandAsset } from '@/lib/brands';
-import { Loader2, Upload, X, Save, Image as ImageIcon, Square } from 'lucide-react';
+import { Loader2, Upload, X, Save, Image as ImageIcon, Square, PenTool, Stamp } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 
@@ -26,16 +26,24 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerUrl, setBannerUrl] = useState(brand.brand_banner_url || '');
 
+    const [signatureFile, setSignatureFile] = useState<File | null>(null);
+    const [signatureUrl, setSignatureUrl] = useState(brand.signature_url || '');
+
+    const [stampFile, setStampFile] = useState<File | null>(null);
+    const [stampUrl, setStampUrl] = useState(brand.stamp_url || '');
+
     const { register, handleSubmit, watch, formState: { errors } } = useForm<CompanyBrand>({
         defaultValues: {
             display_name: brand.display_name,
             brand_color_primary: brand.brand_color_primary,
             brand_color_secondary: brand.brand_color_secondary,
-            official_website: brand.official_website
+            official_website: brand.official_website,
+            unit_email: brand.unit_email,
+            unit_phone: brand.unit_phone
         }
     });
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'logo_squared' | 'banner') => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'logo_squared' | 'banner' | 'signature' | 'stamp') => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             const url = URL.createObjectURL(file);
@@ -49,6 +57,12 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
             } else if (type === 'banner') {
                 setBannerFile(file);
                 setBannerUrl(url);
+            } else if (type === 'signature') {
+                setSignatureFile(file);
+                setSignatureUrl(url);
+            } else if (type === 'stamp') {
+                setStampFile(file);
+                setStampUrl(url);
             }
         }
     };
@@ -59,6 +73,8 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
             let finalLogoUrl = logoUrl;
             let finalLogoSquaredUrl = logoSquaredUrl;
             let finalBannerUrl = bannerUrl;
+            let finalSignatureUrl = signatureUrl;
+            let finalStampUrl = stampUrl;
 
             // Upload assets if changed (files exist in state)
             const uploadPromises = [];
@@ -72,6 +88,12 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
             if (bannerFile) {
                 uploadPromises.push(uploadBrandAsset(bannerFile, brand.unit_slug, 'banner').then(url => finalBannerUrl = url));
             }
+            if (signatureFile) {
+                uploadPromises.push(uploadBrandAsset(signatureFile, brand.unit_slug, 'signature').then(url => finalSignatureUrl = url));
+            }
+            if (stampFile) {
+                uploadPromises.push(uploadBrandAsset(stampFile, brand.unit_slug, 'stamp').then(url => finalStampUrl = url));
+            }
 
             await Promise.all(uploadPromises);
 
@@ -84,7 +106,9 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
                 unit_phone: data.unit_phone,
                 logo_url: finalLogoUrl,
                 logo_squared_url: finalLogoSquaredUrl,
-                brand_banner_url: finalBannerUrl
+                brand_banner_url: finalBannerUrl,
+                signature_url: finalSignatureUrl,
+                stamp_url: finalStampUrl
             });
 
             toast.success('Brand updated successfully');
@@ -241,6 +265,60 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
                                 </div>
                             </div>
                         </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            {/* 4. Signature */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-2">Signature (Transparent PNG)</label>
+                                <div className="relative group w-full aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
+                                    {signatureUrl ? (
+                                        <>
+                                            <img src={signatureUrl} alt="Signature" className="max-h-[80%] max-w-[80%] object-contain" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer pointer-events-none">
+                                                <p className="text-white text-xs font-medium">Change Signature</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center p-4">
+                                            <PenTool className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                            <span className="text-xs text-gray-400">Upload Signature</span>
+                                        </div>
+                                    )}
+                                    <input
+                                        type="file"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        accept="image/png"
+                                        onChange={(e) => handleFileChange(e, 'signature')}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 5. Stamp */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-2">Stamp (Transparent PNG)</label>
+                                <div className="relative group w-full aspect-square md:aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
+                                    {stampUrl ? (
+                                        <>
+                                            <img src={stampUrl} alt="Stamp" className="max-h-[80%] max-w-[80%] object-contain" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer pointer-events-none">
+                                                <p className="text-white text-xs font-medium">Change Stamp</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center p-4">
+                                            <Stamp className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                            <span className="text-xs text-gray-400">Upload Stamp</span>
+                                        </div>
+                                    )}
+                                    <input
+                                        type="file"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        accept="image/png"
+                                        onChange={(e) => handleFileChange(e, 'stamp')}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Colors Section */}
@@ -304,7 +382,7 @@ export default function BrandEditor({ brand, onClose, onUpdate }: BrandEditorPro
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

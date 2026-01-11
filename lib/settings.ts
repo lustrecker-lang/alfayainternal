@@ -3,13 +3,21 @@ import {
     doc,
     getDoc,
     setDoc,
-    serverTimestamp
+    serverTimestamp,
+    collection,
+    addDoc,
+    deleteDoc,
+    getDocs,
+    query,
+    orderBy,
+    Timestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { CompanyProfile } from '@/types/settings';
+import { CompanyProfile, DocumentTemplate } from '@/types/settings';
 
 const SETTINGS_COLLECTION = 'settings';
 const PROFILE_DOC_ID = 'company_profile';
+const TEMPLATES_COLLECTION = 'document_templates';
 
 export async function uploadCompanyAsset(file: File, type: 'logo' | 'stamp' | 'signature' | 'signed_stamp'): Promise<string> {
     try {
@@ -53,5 +61,61 @@ export async function updateCompanyProfile(data: Partial<CompanyProfile>): Promi
     } catch (error) {
         console.error('Error updating company profile:', error);
         throw error;
+    }
+}
+
+// ===== DOCUMENT TEMPLATES =====
+
+export async function getDocumentTemplates(): Promise<DocumentTemplate[]> {
+    try {
+        const q = query(
+            collection(db, TEMPLATES_COLLECTION),
+            orderBy('createdAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
+            updatedAt: doc.data().updatedAt?.toDate?.() || new Date(doc.data().updatedAt),
+        } as DocumentTemplate));
+    } catch (error) {
+        console.error('Error fetching templates:', error);
+        return [];
+    }
+}
+
+export async function saveDocumentTemplate(template: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> {
+    try {
+        const data = {
+            ...template,
+            updatedAt: Timestamp.now(),
+        };
+
+        if (template.id) {
+            // Update
+            await setDoc(doc(db, TEMPLATES_COLLECTION, template.id), data, { merge: true });
+            return template.id;
+        } else {
+            // Create
+            const newDoc = {
+                ...data,
+                createdAt: Timestamp.now(),
+            };
+            const dockRef = await addDoc(collection(db, TEMPLATES_COLLECTION), newDoc);
+            return dockRef.id;
+        }
+    } catch (error) {
+        console.error('Error saving template:', error);
+        throw new Error('Failed to save template');
+    }
+}
+
+export async function deleteDocumentTemplate(id: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, TEMPLATES_COLLECTION, id));
+    } catch (error) {
+        console.error('Error deleting template:', error);
+        throw new Error('Failed to delete template');
     }
 }

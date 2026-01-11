@@ -1,13 +1,15 @@
 'use client';
 
-import { ArrowLeft, Save, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getClientById, updateClient, deleteClient, type ClientFull } from '@/lib/finance';
 import { showToast } from '@/lib/toast';
 import CountrySelect from '@/components/ui/CountrySelect';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
 
 interface Contact {
     id: string;
@@ -18,6 +20,10 @@ interface Contact {
     email2: string;
     phone1: string;
     phone2: string;
+    // Dietary & Travel
+    restrictionsAlimentaires: string;
+    preferencesAlimentaires: string;
+    passportPhotoUrl: string;
 }
 
 const createEmptyContact = (): Contact => ({
@@ -29,6 +35,9 @@ const createEmptyContact = (): Contact => ({
     email2: '',
     phone1: '',
     phone2: '',
+    restrictionsAlimentaires: '',
+    preferencesAlimentaires: '',
+    passportPhotoUrl: '',
 });
 
 export default function ClientEditor() {
@@ -54,6 +63,8 @@ export default function ClientEditor() {
     });
 
     const [contacts, setContacts] = useState<Contact[]>([]);
+    const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null); // contact id currently uploading
+    const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
     useEffect(() => {
         if (clientId) {
@@ -90,6 +101,9 @@ export default function ClientEditor() {
                         email2: c.email2 || '',
                         phone1: c.phone1 || '',
                         phone2: c.phone2 || '',
+                        restrictionsAlimentaires: c.restrictionsAlimentaires || '',
+                        preferencesAlimentaires: c.preferencesAlimentaires || '',
+                        passportPhotoUrl: c.passportPhotoUrl || '',
                     })));
                 } else {
                     setContacts([createEmptyContact()]);
@@ -117,6 +131,27 @@ export default function ClientEditor() {
         setContacts(contacts.map(c =>
             c.id === id ? { ...c, [field]: value } : c
         ));
+    };
+
+    const uploadPassportPhoto = async (contactId: string, file: File) => {
+        setUploadingPhoto(contactId);
+        try {
+            const timestamp = Date.now();
+            const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const path = `clients/${clientId}/passports/${contactId}_${timestamp}_${safeFileName}`;
+            const storageRef = ref(storage, path);
+
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+
+            updateContact(contactId, 'passportPhotoUrl', url);
+            showToast.success('Passport photo uploaded');
+        } catch (error) {
+            console.error('Error uploading passport photo:', error);
+            showToast.error('Failed to upload photo');
+        } finally {
+            setUploadingPhoto(null);
+        }
     };
 
     const handleSave = async (e?: React.FormEvent) => {
@@ -157,15 +192,22 @@ export default function ClientEditor() {
                     zip_code: formData.zipCode.trim() || null,
                     country: formData.country || null,
                 },
-                contacts: validContacts.length > 0 ? validContacts.map(c => ({
-                    title: c.title,
-                    name: c.name,
-                    occupation: c.occupation,
-                    email1: c.email1,
-                    email2: c.email2,
-                    phone1: c.phone1,
-                    phone2: c.phone2,
-                })) : undefined,
+                contacts: validContacts.length > 0 ? validContacts.map(c => {
+                    const contact: Record<string, string> = {
+                        title: c.title,
+                        name: c.name,
+                        occupation: c.occupation,
+                        email1: c.email1,
+                        email2: c.email2,
+                        phone1: c.phone1,
+                        phone2: c.phone2,
+                    };
+                    // Only add these fields if they have actual values
+                    if (c.restrictionsAlimentaires) contact.restrictionsAlimentaires = c.restrictionsAlimentaires;
+                    if (c.preferencesAlimentaires) contact.preferencesAlimentaires = c.preferencesAlimentaires;
+                    if (c.passportPhotoUrl) contact.passportPhotoUrl = c.passportPhotoUrl;
+                    return contact;
+                }) : undefined,
             };
 
             await updateClient(clientId, updatePayload);
@@ -534,6 +576,72 @@ export default function ClientEditor() {
                                             style={{ borderRadius: '0.25rem' }}
                                             placeholder="+971 50 000 0000"
                                         />
+                                    </div>
+
+                                    {/* Dietary Restrictions */}
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-normal text-gray-500 mb-1 font-sans">Restrictions Alimentaires</label>
+                                        <input
+                                            type="text"
+                                            value={contact.restrictionsAlimentaires}
+                                            onChange={(e) => updateContact(contact.id, 'restrictionsAlimentaires', e.target.value)}
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                            placeholder="e.g., Vegetarian, No gluten, Halal..."
+                                        />
+                                    </div>
+
+                                    {/* Dietary Preferences */}
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-normal text-gray-500 mb-1 font-sans">Préférences Alimentaires</label>
+                                        <input
+                                            type="text"
+                                            value={contact.preferencesAlimentaires}
+                                            onChange={(e) => updateContact(contact.id, 'preferencesAlimentaires', e.target.value)}
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-imeda outline-none"
+                                            style={{ borderRadius: '0.25rem' }}
+                                            placeholder="e.g., Prefers fish, No spicy food..."
+                                        />
+                                    </div>
+
+                                    {/* Passport Photo */}
+                                    <div className="md:col-span-2 lg:col-span-4">
+                                        <label className="block text-xs font-normal text-gray-500 mb-2 font-sans">Passport Photo</label>
+                                        <div className="flex items-center gap-4">
+                                            {contact.passportPhotoUrl ? (
+                                                <img
+                                                    src={contact.passportPhotoUrl}
+                                                    alt="Passport"
+                                                    className="w-20 h-20 object-cover rounded border border-gray-200 dark:border-gray-700"
+                                                />
+                                            ) : (
+                                                <div className="w-20 h-20 bg-gray-100 dark:bg-zinc-700 rounded border border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                                                    <span className="text-xs text-gray-400">No photo</span>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    ref={(el) => { fileInputRefs.current[contact.id] = el; }}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) uploadPassportPhoto(contact.id, file);
+                                                    }}
+                                                    className="hidden"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRefs.current[contact.id]?.click()}
+                                                    disabled={uploadingPhoto === contact.id}
+                                                    className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                                                    style={{ borderRadius: '0.25rem' }}
+                                                >
+                                                    <Upload className="w-3 h-3" />
+                                                    {uploadingPhoto === contact.id ? 'Uploading...' : contact.passportPhotoUrl ? 'Replace Photo' : 'Upload Photo'}
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

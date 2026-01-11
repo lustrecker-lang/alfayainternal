@@ -68,15 +68,12 @@ export default function SeminarsPage() {
         return campuses.find(c => c.id === campusId)?.name || '-';
     };
 
-    const getClientName = (clientId: string) => {
-        return clients.find(c => c.id === clientId)?.name || '-';
-    };
+
 
     const filteredSeminars = seminars.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.seminarId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getCampusName(s.campusId).toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getClientName(s.clientId).toLowerCase().includes(searchTerm.toLowerCase())
+        getCampusName(s.campusId).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -133,7 +130,6 @@ export default function SeminarsPage() {
                                 <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 py-3">Seminar ID</th>
                                 <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 py-3">Name</th>
                                 <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 py-3">Campus</th>
-                                <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 py-3">Client</th>
                                 <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 py-3">Dates</th>
                                 <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 py-3">Participants</th>
                                 <th className="w-10"></th>
@@ -157,9 +153,7 @@ export default function SeminarsPage() {
                                     <td className="px-4 py-3">
                                         <span className="text-sm text-gray-600 dark:text-gray-400">{getCampusName(seminar.campusId)}</span>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">{getClientName(seminar.clientId)}</span>
-                                    </td>
+
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                                             <Calendar className="w-3 h-3" />
@@ -169,7 +163,7 @@ export default function SeminarsPage() {
                                     <td className="px-4 py-3 text-center">
                                         <div className="flex items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                                             <Users className="w-3 h-3" />
-                                            {seminar.participantIds.length}
+                                            {seminar.participants?.length || 0}
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">

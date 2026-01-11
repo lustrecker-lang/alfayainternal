@@ -27,6 +27,16 @@ service firebase.storage {
     match /services/{allPaths=**} {
       allow read, write: if true;
     }
+
+    // Seminar Documents
+    match /seminars/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Client Documents (passport photos, etc.)
+    match /clients/{allPaths=**} {
+      allow read, write: if true;
+    }
     
     // Default: deny access to all other paths
     match /{allPaths=**} {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, MapPin, ExternalLink, Edit2, Trash2, GraduationCap, User } from 'lucide-react';
+import { Plus, Search, MapPin, Edit2, Trash2, GraduationCap, User } from 'lucide-react';
 import { getCampuses, deleteCampus } from '@/lib/campuses';
 import { getConsultants } from '@/lib/staff';
 import type { Campus } from '@/types/finance';
@@ -133,6 +133,7 @@ export default function CampusesPage() {
                                 {/* Image Placeholder or Actual Image */}
                                 <div className="h-40 relative group">
                                     <StandardImage
+                                        key={`campus-img-${campus.id}-${campus.imageUrl || 'none'}`}
                                         src={campus.imageUrl}
                                         alt={campus.name}
                                         containerClassName="w-full h-full"
@@ -146,7 +147,7 @@ export default function CampusesPage() {
                                     />
                                     <div className="absolute top-3 left-3">
                                         <div className="flex items-center gap-2 px-2 py-1 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm text-imeda text-[9px] font-bold uppercase tracking-widest shadow-sm" style={{ borderRadius: '0.125rem' }}>
-                                            {campus.country}
+                                            {campus.city ? `${campus.city}, ${campus.country}` : campus.country}
                                         </div>
                                     </div>
                                     <div className="absolute top-3 right-3 flex gap-1 transform translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
@@ -180,6 +181,7 @@ export default function CampusesPage() {
                                         {campus.directorId && (
                                             <div className="flex items-center gap-3 p-2.5 bg-gray-50 dark:bg-zinc-900/50" style={{ borderRadius: '0.25rem' }}>
                                                 <StandardImage
+                                                    key={`director-img-${campus.directorId}-${director?.avatarUrl || 'none'}`}
                                                     src={director?.avatarUrl}
                                                     alt={director?.name || 'Director'}
                                                     containerClassName="w-8 h-8 rounded-full border border-gray-100 dark:border-zinc-700"
@@ -192,23 +194,11 @@ export default function CampusesPage() {
                                             </div>
                                         )}
 
-                                        <div className="flex items-start gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                                            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400" />
-                                            <p className="line-clamp-2 leading-snug">
-                                                {campus.address}
-                                            </p>
-                                        </div>
-
-                                        {campus.googleMapsLink && (
-                                            <a
-                                                href={campus.googleMapsLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1.5 text-xs text-imeda hover:underline font-semibold mt-auto"
-                                            >
-                                                <ExternalLink className="w-3 h-3" />
-                                                Google Maps Location
-                                            </a>
+                                        {(campus.offices?.length ?? 0) > 0 && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <MapPin className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                                                <span>{campus.offices!.length} office{campus.offices!.length !== 1 ? 's' : ''}</span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

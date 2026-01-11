@@ -32,10 +32,12 @@ export async function getCampuses(): Promise<Campus[]> {
                 id: doc.id,
                 name: data.name,
                 country: data.country,
+                city: data.city,
                 address: data.address,
                 googleMapsLink: data.googleMapsLink,
                 imageUrl: data.imageUrl,
                 directorId: data.directorId,
+                offices: data.offices || [],
                 createdAt: data.createdAt?.toDate() || new Date(),
                 updatedAt: data.updatedAt?.toDate(),
             } as Campus;

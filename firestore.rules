@@ -78,6 +78,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Document Templates
+    match /document_templates/{template} {
+        allow read, write: if true;
+    }
+
     // ============================================================
     // USER DATA
     // ============================================================

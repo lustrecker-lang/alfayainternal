@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, MapPin, Link as LinkIcon, Upload, ImageIcon, User, Plus, Trash2, Building2, Phone, Mail } from 'lucide-react';
+import { X, Save, MapPin, Link as LinkIcon, Upload, ImageIcon, User, Plus, Trash2, Building2, Phone, Mail, Video, FileText } from 'lucide-react';
 import CountrySelect from '@/components/ui/CountrySelect';
-import type { Campus, CampusOffice } from '@/types/finance';
+import type { Campus, CampusOffice, OfficeMedia } from '@/types/finance';
 import type { Consultant } from '@/types/staff';
 import { addCampus, updateCampus } from '@/lib/campuses';
 import { getConsultants } from '@/lib/staff';
@@ -33,6 +33,7 @@ export default function CampusEditor({
     const [formData, setFormData] = useState({
         name: '',
         country: '',
+        city: '',
         address: '',
         googleMapsLink: '',
         directorId: '',
@@ -59,6 +60,7 @@ export default function CampusEditor({
                 setFormData({
                     name: campus.name,
                     country: campus.country,
+                    city: campus.city || '',
                     address: campus.address,
                     googleMapsLink: campus.googleMapsLink || '',
                     directorId: campus.directorId || '',
@@ -70,6 +72,7 @@ export default function CampusEditor({
                 setFormData({
                     name: '',
                     country: '',
+                    city: '',
                     address: '',
                     googleMapsLink: '',
                     directorId: '',
@@ -109,6 +112,60 @@ export default function CampusEditor({
         const storageRef = ref(storage, `campuses/${filename}`);
         await uploadBytes(storageRef, file);
         return await getDownloadURL(storageRef);
+    };
+
+    const uploadOfficeMedia = async (file: File, officeId: string): Promise<string> => {
+        const timestamp = Date.now();
+        const filename = `${officeId}_${timestamp}_${file.name}`;
+        const storageRef = ref(storage, `campuses/offices/${filename}`);
+        await uploadBytes(storageRef, file);
+        return await getDownloadURL(storageRef);
+    };
+
+    const handleAddMedia = async (officeIndex: number, file: File) => {
+        const office = offices[officeIndex];
+        const isVideo = file.type.startsWith('video/');
+
+        try {
+            const url = await uploadOfficeMedia(file, office.id);
+            const newMedia: OfficeMedia = {
+                id: crypto.randomUUID(),
+                url,
+                type: isVideo ? 'video' : 'image',
+                title: '',
+                description: '',
+            };
+
+            const updated = [...offices];
+            updated[officeIndex] = {
+                ...office,
+                media: [...(office.media || []), newMedia],
+            };
+            setOffices(updated);
+            showToast.success('Media uploaded successfully');
+        } catch (error) {
+            console.error('Error uploading media:', error);
+            showToast.error('Failed to upload media');
+        }
+    };
+
+    const handleUpdateMedia = (officeIndex: number, mediaIndex: number, updates: Partial<OfficeMedia>) => {
+        const updated = [...offices];
+        const office = updated[officeIndex];
+        const media = [...(office.media || [])];
+        media[mediaIndex] = { ...media[mediaIndex], ...updates };
+        updated[officeIndex] = { ...office, media };
+        setOffices(updated);
+    };
+
+    const handleDeleteMedia = (officeIndex: number, mediaId: string) => {
+        const updated = [...offices];
+        const office = updated[officeIndex];
+        updated[officeIndex] = {
+            ...office,
+            media: (office.media || []).filter(m => m.id !== mediaId),
+        };
+        setOffices(updated);
     };
 
     if (!isOpen) return null;
@@ -237,6 +294,20 @@ export default function CampusEditor({
                                     <CountrySelect
                                         value={formData.country}
                                         onChange={(val) => setFormData({ ...formData, country: val })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-sans">
+                                        City
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.city}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-imeda transition-all font-sans text-sm"
+                                        style={{ borderRadius: '0.25rem' }}
+                                        placeholder="e.g. London"
                                     />
                                 </div>
 
@@ -455,6 +526,139 @@ export default function CampusEditor({
                                                             placeholder="https://goo.gl/maps/..."
                                                         />
                                                     </div>
+                                                </div>
+
+                                                {/* Google Maps Image */}
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Google Maps Image</label>
+                                                    {office.mapImageUrl ? (
+                                                        <div className="relative group">
+                                                            <img
+                                                                src={office.mapImageUrl}
+                                                                alt="Map"
+                                                                className="w-full h-32 object-cover rounded border border-gray-200"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const updated = [...offices];
+                                                                    updated[index] = { ...office, mapImageUrl: undefined };
+                                                                    setOffices(updated);
+                                                                }}
+                                                                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <label className="flex items-center justify-center gap-2 w-full h-32 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-imeda transition-colors">
+                                                            <Upload className="w-4 h-4 text-gray-400" />
+                                                            <span className="text-xs text-gray-500">Upload Map Screenshot</span>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                onChange={async (e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (!file) return;
+
+                                                                    try {
+                                                                        const storageRef = ref(storage, `campuses/maps/${Date.now()}_${file.name}`);
+                                                                        await uploadBytes(storageRef, file);
+                                                                        const url = await getDownloadURL(storageRef);
+
+                                                                        const updated = [...offices];
+                                                                        updated[index] = { ...office, mapImageUrl: url };
+                                                                        setOffices(updated);
+                                                                        showToast.success('Map image uploaded');
+                                                                    } catch (error) {
+                                                                        console.error('Error uploading map image:', error);
+                                                                        showToast.error('Failed to upload map image');
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                    )}
+                                                </div>
+
+                                                {/* Office Media */}
+                                                <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="block text-xs text-gray-500">Photos & Videos</label>
+                                                        <label className="flex items-center gap-1 text-xs text-imeda hover:text-imeda/80 transition-colors font-medium cursor-pointer">
+                                                            <Plus className="w-3 h-3" />
+                                                            Add Media
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*,video/*"
+                                                                className="hidden"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) handleAddMedia(index, file);
+                                                                    e.target.value = '';
+                                                                }}
+                                                            />
+                                                        </label>
+                                                    </div>
+
+                                                    {(!office.media || office.media.length === 0) ? (
+                                                        <div className="text-center py-4 bg-white dark:bg-zinc-800 border border-dashed border-gray-200 dark:border-gray-600 rounded">
+                                                            <ImageIcon className="w-6 h-6 text-gray-300 mx-auto mb-1" />
+                                                            <p className="text-xs text-gray-400">No media added</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {office.media.map((media, mediaIndex) => (
+                                                                <div key={media.id} className="p-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-600 rounded space-y-2">
+                                                                    <div className="flex gap-3">
+                                                                        {/* Thumbnail */}
+                                                                        <div className="w-20 h-20 flex-shrink-0 rounded overflow-hidden bg-gray-100 dark:bg-zinc-700">
+                                                                            {media.type === 'video' ? (
+                                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                                    <Video className="w-8 h-8 text-gray-400" />
+                                                                                </div>
+                                                                            ) : (
+                                                                                <img src={media.url} alt={media.title || 'Media'} className="w-full h-full object-cover" />
+                                                                            )}
+                                                                        </div>
+                                                                        {/* Details */}
+                                                                        <div className="flex-1 space-y-2">
+                                                                            <div className="flex items-start justify-between gap-2">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={media.title || ''}
+                                                                                    onChange={(e) => handleUpdateMedia(index, mediaIndex, { title: e.target.value })}
+                                                                                    className="flex-1 px-2 py-1 bg-gray-50 dark:bg-zinc-700 border border-gray-200 dark:border-gray-600 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
+                                                                                    placeholder="Title (optional)"
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleDeleteMedia(index, media.id)}
+                                                                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                                                                >
+                                                                                    <Trash2 className="w-4 h-4" />
+                                                                                </button>
+                                                                            </div>
+                                                                            <textarea
+                                                                                value={media.description || ''}
+                                                                                onChange={(e) => handleUpdateMedia(index, mediaIndex, { description: e.target.value })}
+                                                                                className="w-full px-2 py-1 bg-gray-50 dark:bg-zinc-700 border border-gray-200 dark:border-gray-600 rounded text-xs focus:outline-none focus:ring-1 focus:ring-imeda resize-none"
+                                                                                placeholder="Description (optional)"
+                                                                                rows={2}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                                                                        {media.type === 'video' ? (
+                                                                            <><Video className="w-3 h-3" /> Video</>
+                                                                        ) : (
+                                                                            <><ImageIcon className="w-3 h-3" /> Image</>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

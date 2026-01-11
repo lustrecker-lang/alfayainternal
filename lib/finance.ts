@@ -317,6 +317,10 @@ export interface ClientFull extends Client {
         email2?: string;
         phone1?: string;
         phone2?: string;
+        // Dietary & Travel
+        restrictionsAlimentaires?: string;
+        preferencesAlimentaires?: string;
+        passportPhotoUrl?: string;
     }[];
 }
 

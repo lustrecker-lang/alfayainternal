@@ -98,8 +98,8 @@ export async function updateBrand(slug: string, data: Partial<CompanyBrand>): Pr
     }
 }
 
-// type: 'logo' | 'logo_squared' | 'banner'
-export async function uploadBrandAsset(file: File, slug: string, assetType: 'logo' | 'logo_squared' | 'banner'): Promise<string> {
+// type: 'logo' | 'logo_squared' | 'banner' | 'signature' | 'stamp'
+export async function uploadBrandAsset(file: File, slug: string, assetType: 'logo' | 'logo_squared' | 'banner' | 'signature' | 'stamp'): Promise<string> {
     try {
         const extension = file.name.split('.').pop();
         const filename = `${assetType}_${Date.now()}.${extension}`;

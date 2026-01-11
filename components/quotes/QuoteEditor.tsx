@@ -24,6 +24,7 @@ interface QuoteEditorProps {
 export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
+    const [quoteId, setQuoteId] = useState<string | undefined>(quote?.id);
     const [clients, setClients] = useState<ClientFull[]>([]);
     const [campuses, setCampuses] = useState<Campus[]>([]);
     const [allServices, setAllServices] = useState<ImedaService[]>([]);
@@ -227,8 +228,14 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                 status: (quote?.status || 'draft') as 'draft' | 'sent' | 'accepted' | 'rejected',
             };
 
-            await saveQuote(quoteData, quote?.id);
-            showToast.success(quote ? 'Quote updated' : 'Quote created');
+            const savedId = await saveQuote(quoteData, quoteId);
+
+            // Update quoteId so subsequent saves update the same quote
+            if (!quoteId) {
+                setQuoteId(savedId);
+            }
+
+            showToast.success(quoteId ? 'Quote updated' : 'Quote created');
 
             if (onClose) {
                 onClose();
@@ -301,10 +308,10 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
                 <div className="flex gap-2">
                     <button
                         onClick={() => setShareModalOpen(true)}
-                        disabled={!quote?.id}
+                        disabled={!quoteId}
                         className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
                         style={{ borderRadius: '0.25rem' }}
-                        title={!quote?.id ? 'Save quote first to share' : 'Share quote'}
+                        title={!quoteId ? 'Save quote first to share' : 'Share quote'}
                     >
                         <Share2 className="w-4 h-4" />
                         Share
@@ -503,7 +510,7 @@ export default function QuoteEditor({ quote, onClose }: QuoteEditorProps) {
             <ShareQuoteModal
                 isOpen={shareModalOpen}
                 onClose={() => setShareModalOpen(false)}
-                quoteId={quote?.id || ''}
+                quoteId={quoteId || ''}
             />
         </div>
     );

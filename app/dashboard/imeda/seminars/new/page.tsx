@@ -29,7 +29,6 @@ export default function NewSeminarPage() {
         name: '',
         campusId: '',
         officeIds: [] as string[],
-        clientId: '',
         assignedStaffIds: [] as string[],
         courseIds: [] as string[],
         startDate: '',
@@ -70,10 +69,7 @@ export default function NewSeminarPage() {
             showToast.error('Please select a campus');
             return;
         }
-        if (!formData.clientId) {
-            showToast.error('Please select a client');
-            return;
-        }
+        // Client and participants can be added after creation in the edit page
         if (!formData.startDate || !formData.endDate) {
             showToast.error('Please set start and end dates');
             return;
@@ -89,8 +85,7 @@ export default function NewSeminarPage() {
                     name: formData.name,
                     campusId: formData.campusId,
                     officeIds: formData.officeIds,
-                    clientId: formData.clientId,
-                    participantIds: [],
+                    participants: [],  // Start with empty participants, add them in edit page
                     assignedStaffIds: formData.assignedStaffIds,
                     courseIds: formData.courseIds,
                     startDate: new Date(formData.startDate),
@@ -221,8 +216,8 @@ export default function NewSeminarPage() {
                                             type="button"
                                             onClick={() => toggleOffice(office.id)}
                                             className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${formData.officeIds.includes(office.id)
-                                                    ? 'bg-imeda text-white'
-                                                    : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                                                ? 'bg-imeda text-white'
+                                                : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {office.name}
@@ -233,21 +228,11 @@ export default function NewSeminarPage() {
                         </div>
                     </div>
 
-                    {/* Client */}
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                            Client *
-                        </label>
-                        <select
-                            value={formData.clientId}
-                            onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                            className="w-full px-4 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-1 focus:ring-imeda"
-                        >
-                            <option value="">Select Client</option>
-                            {clients.map(client => (
-                                <option key={client.id} value={client.id}>{client.name}</option>
-                            ))}
-                        </select>
+                    {/* Note about participants */}
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                            💡 <strong>Tip:</strong> After creating the seminar, you can add participants from multiple companies in the Participants tab.
+                        </p>
                     </div>
 
                     {/* Assigned Staff */}
@@ -262,8 +247,8 @@ export default function NewSeminarPage() {
                                     type="button"
                                     onClick={() => toggleStaff(person.id)}
                                     className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${formData.assignedStaffIds.includes(person.id)
-                                            ? 'bg-imeda text-white'
-                                            : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                                        ? 'bg-imeda text-white'
+                                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                                         }`}
                                 >
                                     {person.name}
@@ -284,8 +269,8 @@ export default function NewSeminarPage() {
                                     type="button"
                                     onClick={() => toggleCourse(course.id)}
                                     className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${formData.courseIds.includes(course.id)
-                                            ? 'bg-imeda text-white'
-                                            : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-gray-600'
+                                        ? 'bg-imeda text-white'
+                                        : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-gray-600'
                                         }`}
                                 >
                                     {course.formationId} - {course.title}
@@ -328,7 +313,7 @@ export default function NewSeminarPage() {
                     </div>
 
                     <p className="text-xs text-gray-400">
-                        * Required fields. You can add participants and documents after creating the seminar.
+                        * Required fields. Add participants, courses, and documents after creation.
                     </p>
                 </div>
             </div>

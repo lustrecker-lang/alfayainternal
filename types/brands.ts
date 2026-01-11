@@ -10,5 +10,7 @@ export interface CompanyBrand {
     official_website?: string; // Optional
     unit_email?: string;
     unit_phone?: string;
+    signature_url?: string; // New
+    stamp_url?: string; // New
     updatedAt?: Date;
 }

@@ -42,3 +42,31 @@ export interface CompanyProfile {
     bank_accounts: BankAccount[];
     updatedAt?: Date;
 }
+
+export interface DocumentLayout {
+    showLogo: boolean;
+    showHeaderAddress: boolean;
+    showDate: boolean;
+    dateAlignment: 'left' | 'right';
+    showSubject: boolean;
+    showFooter: boolean;
+    customFooter?: string;
+    showSignature: boolean;
+    showStamp: boolean;
+    signatureText?: string;
+}
+
+export interface DocumentTemplate {
+    id: string;
+    name: string;
+    type: 'invitation_letter' | 'certificate' | 'visa_support' | 'welcome_pack' | 'other';
+    // If empty or null, applies to ALL campuses
+    campusIds: string[];
+    subject: string;
+    subtitle?: string;
+    body: string; // Markdown supported
+    layout?: DocumentLayout;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}

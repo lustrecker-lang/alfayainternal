@@ -26,11 +26,23 @@ export function StandardImage({
 }: StandardImageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
+    const imgRef = React.useRef<HTMLImageElement>(null);
 
-    // Reset state when src changes
+    // Reset state when src changes, but check if already cached
     useEffect(() => {
-        setIsLoading(true);
-        setHasError(false);
+        if (!src || src.trim() === '') {
+            setIsLoading(false);
+            return;
+        }
+
+        // Check if image is already cached/complete
+        if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+            setIsLoading(false);
+            setHasError(false);
+        } else {
+            setIsLoading(true);
+            setHasError(false);
+        }
     }, [src]);
 
     const defaultFallback = (
@@ -56,6 +68,7 @@ export function StandardImage({
                 </div>
             )}
             <img
+                ref={imgRef}
                 src={src}
                 alt={alt}
                 className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}
